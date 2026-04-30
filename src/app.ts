@@ -25,6 +25,23 @@ app.get("/", async (c) => {
 });
 app.get("/_test", (c) => c.html("<h1>hello</h1>"));
 app.get("/_test_full", (c) => c.html(`<!doctype html><html><head><title>full</title></head><body><h1>full doc</h1><p>${"x".repeat(500)}</p></body></html>`));
+
+import { html as honoHtml, raw as honoRaw } from "hono/html";
+app.get("/_t1", (c) => c.html(honoHtml`<h1>t1</h1>`));
+app.get("/_t2", (c) => {
+  const body = honoHtml`<h1>shell-body</h1>`;
+  return c.html(honoHtml`<!doctype html><html><body>${body}</body></html>`);
+});
+app.get("/_t3", (c) => {
+  // Shell with FONT_LINK + a minimal body
+  const FONT = honoRaw(`<link href="https://fonts.googleapis.com/css2?family=Geist&display=swap" rel="stylesheet">`);
+  return c.html(honoHtml`<!doctype html><html><head>${FONT}</head><body><h1>t3</h1></body></html>`);
+});
+app.get("/_t4", (c) => {
+  // Shell with raw STYLE-like big string
+  const big = honoRaw(`body { color: red; } ${"a".repeat(20000)}`);
+  return c.html(honoHtml`<!doctype html><html><head><style>${big}</style></head><body><h1>t4</h1></body></html>`);
+});
 app.get("/healthz", (c) => c.json({ ok: true, cache: cacheStats() }));
 
 // ---------------------------------------------------------------------------
