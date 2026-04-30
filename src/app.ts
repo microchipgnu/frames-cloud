@@ -15,17 +15,11 @@ const RESOURCE_WORDS = new Set(["schema", "readme", "entities", "_frames"]);
 // 1. Static endpoints
 // ---------------------------------------------------------------------------
 
-app.get("/", async (c) => {
-  try {
-    const out = await renderHome();
-    const str = String(out); // force coercion in case it's an HtmlEscapedString-wrapped Promise
-    return new Response(str, {
-      status: 200,
-      headers: { "content-type": "text/html; charset=utf-8" },
-    });
-  } catch (e) {
-    return c.json({ error: "renderHome failed", msg: (e as Error).message, stack: (e as Error).stack?.split("\n").slice(0, 10) }, 500);
-  }
+app.get("/", (c) => {
+  return new Response("hello root", {
+    status: 200,
+    headers: { "content-type": "text/plain; charset=utf-8" },
+  });
 });
 app.get("/_test", (c) => c.html("<h1>hello</h1>"));
 app.get("/_test_full", (c) => c.html(`<!doctype html><html><head><title>full</title></head><body><h1>full doc</h1><p>${"x".repeat(500)}</p></body></html>`));
