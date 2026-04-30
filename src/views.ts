@@ -284,8 +284,7 @@ ${FONT_LINK}
   <div class="row">
     <a href="/" class="brand">frames<span class="dot">·</span>cloud</a>
     <nav>
-      <a href="/microchipgnu/ai-agent-wallets-eu">example</a>
-      <a href="/microchipgnu/ai-agent-wallets">multi</a>
+      <a href="/microchipgnu/frames-examples">example</a>
       <a href="https://github.com/microchipgnu/frames-cloud">source</a>
     </nav>
   </div>
@@ -350,27 +349,17 @@ export function renderHome(): Html {
 </section>
 
 <section>
-  <h2>live datasets</h2>
+  <h2>example</h2>
   <div class="frames-list">
-    <a class="card" href="/microchipgnu/ai-agent-wallets-eu">
+    <a class="card" href="/microchipgnu/frames-examples">
       <div>
-        <div class="title">ai_agent_wallets_eu</div>
-        <div class="path">microchipgnu / ai-agent-wallets-eu</div>
-        <div class="desc">EU-headquartered companies building programmable wallets and payment infrastructure for AI agents. Every fact verbatim-sourced.</div>
+        <div class="title">frames-examples</div>
+        <div class="path">github.com / microchipgnu / frames-examples</div>
+        <div class="desc">Reference repo: maintain multiple live datasets with frames + opencode on a daily cron. Three sibling frames under <code class="inline">datasets/</code> — <code class="inline">ai-models</code>, <code class="inline">ai-promises</code>, <code class="inline">mcp-servers</code>.</div>
       </div>
-      <div class="col"><span class="k">entities</span><span class="v">13</span></div>
-      <div class="col"><span class="k">countries</span><span class="v">9</span></div>
-      <div class="col"><span class="k">type</span><span class="v">single-frame</span></div>
-    </a>
-    <a class="card" href="/microchipgnu/ai-agent-wallets">
-      <div>
-        <div class="title">ai-agent-wallets</div>
-        <div class="path">microchipgnu / ai-agent-wallets</div>
-        <div class="desc">Multi-frame repo: <code class="inline">eu/</code> + <code class="inline">us/</code> sibling datasets sharing field shape but differing on hq_country enum.</div>
-      </div>
-      <div class="col"><span class="k">frames</span><span class="v">2</span></div>
-      <div class="col"><span class="k">scope</span><span class="v">EU + US</span></div>
+      <div class="col"><span class="k">frames</span><span class="v">3</span></div>
       <div class="col"><span class="k">type</span><span class="v">multi-frame</span></div>
+      <div class="col"><span class="k">refresh</span><span class="v">daily cron</span></div>
     </a>
   </div>
 </section>
