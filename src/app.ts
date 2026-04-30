@@ -15,11 +15,12 @@ const RESOURCE_WORDS = new Set(["schema", "readme", "entities", "_frames"]);
 // 1. Static endpoints
 // ---------------------------------------------------------------------------
 
-app.get("/", (c) => {
+app.get("/", async (c) => {
   try {
-    return c.html(renderHome());
+    const out = await renderHome();
+    return c.html(out);
   } catch (e) {
-    return c.json({ error: "renderHome failed", msg: (e as Error).message, stack: (e as Error).stack?.split("\n").slice(0, 6) }, 500);
+    return c.json({ error: "renderHome failed", msg: (e as Error).message, stack: (e as Error).stack?.split("\n").slice(0, 8) }, 500);
   }
 });
 app.get("/_test", (c) => c.html("<h1>hello</h1>"));
