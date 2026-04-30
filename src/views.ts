@@ -2,6 +2,10 @@ import { html, raw } from "hono/html";
 import type { HtmlEscapedString } from "hono/utils/html";
 import type { Dataset, Entity, Source } from "./types.ts";
 
+// `html` tag can return a Promise when interpolating async values; widen
+// our render-function return type so TS strict mode (Vercel) is happy.
+type Html = HtmlEscapedString | Promise<HtmlEscapedString>;
+
 const FONT_LINK = raw(`
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -265,7 +269,7 @@ const STYLE = raw(`
   section:last-child { margin-bottom: 0; }
 `);
 
-function shell(titleText: string, body: HtmlEscapedString | string): HtmlEscapedString {
+function shell(titleText: string, body: Html | string): Html {
   return html`<!doctype html>
 <html lang="en">
 <head>
@@ -305,7 +309,7 @@ function host(url: string): string {
   }
 }
 
-function fieldCellPlain(value: unknown): HtmlEscapedString {
+function fieldCellPlain(value: unknown): Html {
   if (value === undefined || value === null) {
     return html`<span class="empty"></span>`;
   }
@@ -319,7 +323,7 @@ function fieldCellPlain(value: unknown): HtmlEscapedString {
 // Home
 // ---------------------------------------------------------------------------
 
-export function renderHome(): HtmlEscapedString {
+export function renderHome(): Html {
   const body = html`
 <section>
   <div class="eyebrow">frames-cloud · github-resolver runtime for evidence-backed datasets</div>
@@ -393,7 +397,7 @@ export function renderRepoIndex(
   repo: string,
   sha: string,
   frames: RepoFrameSummary[],
-): HtmlEscapedString {
+): Html {
   const githubUrl = `https://github.com/${user}/${repo}`;
   const cards = frames.map((f) => {
     const url = `/${user}/${repo}${f.frame_path ? "/" + f.frame_path : ""}`;
@@ -442,10 +446,10 @@ export function renderRepoIndex(
 export function renderFrame(
   ds: Dataset,
   entities: Entity[],
-  page: { limit: number; next_cursor: string | null; has_more: boolean },
+  page: { next_cursor: string | null; has_more: boolean },
   filters: Record<string, string[]>,
   countryCounts: Map<string, number>,
-): HtmlEscapedString {
+): Html {
   const fieldOrder = Object.keys(ds.schema.fields);
   // skip "name" — we render it as the row header. include up to 6 more.
   const visibleFields = fieldOrder.filter((f) => f !== "name").slice(0, 6);
@@ -503,7 +507,7 @@ export function renderFrame(
 
   const body = html`
 <section>
-  <div class="eyebrow">${ds.entity_type ?? "entity"} · ${ds.user}/${ds.repo}${ds.frame_path ? "/" + ds.frame_path : ""}</div>
+  <div class="eyebrow">${ds.schema.entity_type ?? "entity"} · ${ds.user}/${ds.repo}${ds.frame_path ? "/" + ds.frame_path : ""}</div>
   <h1 class="page">${ds.schema.name}</h1>
   <p class="desc">${(ds.schema.description ?? "").split("\n").join(" ").trim()}</p>
 </section>
@@ -563,7 +567,7 @@ export function renderFrame(
 // Entity view
 // ---------------------------------------------------------------------------
 
-export function renderEntity(ds: Dataset, ent: Entity): HtmlEscapedString {
+export function renderEntity(ds: Dataset, ent: Entity): Html {
   const path = `/${ds.user}/${ds.repo}${ds.frame_path ? "/" + ds.frame_path : ""}`;
 
   const fieldRows = Object.keys(ds.schema.fields).map((f) => {

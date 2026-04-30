@@ -98,7 +98,7 @@ v1.get("/:user/:repo/*", async (c) => {
   const ref = c.req.query("ref") ?? "HEAD";
   const segments = rest.split("/").filter(Boolean);
 
-  const resourceIdx = segments.findIndex((s) => RESOURCE_WORDS.has(s));
+  const resourceIdx = segments.findIndex((s: string) => RESOURCE_WORDS.has(s));
   const framePath =
     resourceIdx === -1 ? segments.join("/") : segments.slice(0, resourceIdx).join("/");
   const resource = resourceIdx === -1 ? null : segments[resourceIdx]!;
@@ -205,7 +205,7 @@ async function htmlFrameOrEntity(c: any) {
   const ref = c.req.query("ref") ?? "HEAD";
   const segments = rest.split("/").filter(Boolean);
 
-  const resourceIdx = segments.findIndex((s) => RESOURCE_WORDS.has(s));
+  const resourceIdx = segments.findIndex((s: string) => RESOURCE_WORDS.has(s));
   const framePath =
     resourceIdx === -1 ? segments.join("/") : segments.slice(0, resourceIdx).join("/");
   const resource = resourceIdx === -1 ? null : segments[resourceIdx]!;
