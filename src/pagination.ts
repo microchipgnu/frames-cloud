@@ -1,13 +1,21 @@
 import type { Entity } from "./types.ts";
 
+// base64url encoder/decoder, runtime-agnostic (Edge has no Node Buffer).
 export function encodeCursor(entity_id: string): string {
-  return Buffer.from(entity_id, "utf8").toString("base64url");
+  const bytes = new TextEncoder().encode(entity_id);
+  let binary = "";
+  for (let i = 0; i < bytes.length; i++) binary += String.fromCharCode(bytes[i]!);
+  return btoa(binary).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
 }
 
 export function decodeCursor(cursor: string | undefined): string | null {
   if (!cursor) return null;
   try {
-    return Buffer.from(cursor, "base64url").toString("utf8");
+    const padded = cursor.replace(/-/g, "+").replace(/_/g, "/");
+    const binary = atob(padded);
+    const bytes = new Uint8Array(binary.length);
+    for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
+    return new TextDecoder().decode(bytes);
   } catch {
     return null;
   }
