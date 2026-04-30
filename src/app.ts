@@ -278,7 +278,15 @@ app.onError((err, c) => {
     return c.json({ error: err.message }, err.status as 404 | 502);
   }
   console.error(err);
-  return c.json({ error: "internal error", message: err.message }, 500);
+  return c.json(
+    {
+      error: "internal error",
+      message: err.message,
+      name: err.name,
+      stack: err.stack?.split("\n").slice(0, 8),
+    },
+    500,
+  );
 });
 
 export default app;
