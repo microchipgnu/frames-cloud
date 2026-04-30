@@ -24,6 +24,7 @@ app.get("/", async (c) => {
   }
 });
 app.get("/_test", (c) => c.html("<h1>hello</h1>"));
+app.get("/_test_full", (c) => c.html(`<!doctype html><html><head><title>full</title></head><body><h1>full doc</h1><p>${"x".repeat(500)}</p></body></html>`));
 app.get("/healthz", (c) => c.json({ ok: true, cache: cacheStats() }));
 
 // ---------------------------------------------------------------------------
