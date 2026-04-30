@@ -5,378 +5,267 @@ import type { Dataset, Entity, Source } from "./types.ts";
 const FONT_LINK = raw(`
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Geist:wght@300;400;500;600&family=Geist+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600&family=Geist+Mono:wght@400;500&display=swap" rel="stylesheet">
 `);
 
 const STYLE = raw(`
   :root {
-    --canvas: #FBFBFA;
-    --surface: #FFFFFF;
-    --surface-soft: #F7F6F3;
-    --ink: #111111;
-    --ink-2: #2F3437;
-    --muted: #787774;
-    --border: #EAEAEA;
-    --border-soft: rgba(0,0,0,0.04);
+    --bg: #FFFFFF;
+    --ink: #0A0A0A;
+    --ink-2: #303030;
+    --muted: #6B6B6B;
+    --border: #E0E0E0;
+    --border-soft: #F0F0F0;
+    --row-hover: #FAFAFA;
+    --link: #0F3CB7;
 
-    --blue-bg: #E1F3FE;   --blue-fg: #1F6C9F;
-    --green-bg: #EDF3EC;  --green-fg: #346538;
-    --yellow-bg: #FBF3DB; --yellow-fg: #956400;
-    --red-bg: #FDEBEC;    --red-fg: #9F2F2D;
-
-    --serif: 'Instrument Serif', 'Newsreader', 'Lyon Text', Georgia, serif;
     --sans: 'Geist', 'SF Pro Display', system-ui, -apple-system, 'Helvetica Neue', sans-serif;
     --mono: 'Geist Mono', 'SF Mono', 'JetBrains Mono', ui-monospace, monospace;
-
-    --easeOut: cubic-bezier(0.16, 1, 0.3, 1);
   }
   * { box-sizing: border-box; }
   html, body { margin: 0; padding: 0; }
   body {
-    background: var(--canvas); color: var(--ink);
-    font-family: var(--sans); font-size: 15.5px; line-height: 1.6;
+    background: var(--bg); color: var(--ink);
+    font-family: var(--sans); font-size: 14px; line-height: 1.5;
     -webkit-font-smoothing: antialiased;
-    text-rendering: optimizeLegibility;
+    font-feature-settings: 'tnum' on, 'cv11' on;
   }
-  ::selection { background: var(--yellow-bg); color: var(--ink); }
+  ::selection { background: var(--ink); color: var(--bg); }
 
-  /* ambient drift, fixed under everything */
-  .ambient {
-    position: fixed; inset: 0; z-index: -1; pointer-events: none;
-    background:
-      radial-gradient(800px 600px at 80% 5%, rgba(225, 243, 254, 0.35), transparent 60%),
-      radial-gradient(700px 500px at 5% 90%, rgba(251, 243, 219, 0.25), transparent 60%);
-  }
+  a { color: var(--ink); text-decoration: underline; text-underline-offset: 2px; text-decoration-thickness: 1px; text-decoration-color: var(--border); }
+  a:hover { text-decoration-color: var(--ink); }
+  a.plain { text-decoration: none; }
+  a.plain:hover { text-decoration: underline; text-underline-offset: 2px; text-decoration-thickness: 1px; text-decoration-color: var(--ink); }
 
-  a { color: var(--ink); text-decoration: none; }
-  a:hover { text-decoration: underline; text-underline-offset: 3px; }
-  a.muted { color: var(--muted); }
-
-  /* Headings — editorial serif, tight tracking */
-  h1, h2, h3 { font-family: var(--serif); font-weight: 400; color: var(--ink); margin: 0; line-height: 1.1; letter-spacing: -0.02em; }
-  .display { font-size: clamp(48px, 6vw, 72px); letter-spacing: -0.035em; line-height: 1.02; }
-  h1.page { font-size: clamp(36px, 4.4vw, 56px); letter-spacing: -0.03em; }
-  h1.entity { font-size: clamp(40px, 5vw, 64px); letter-spacing: -0.035em; }
-  h2 { font-size: clamp(22px, 2.4vw, 30px); letter-spacing: -0.02em; }
-
-  /* Tiny uppercase section label */
-  .eyebrow {
-    font-family: var(--mono); font-size: 11px; text-transform: uppercase;
-    letter-spacing: 0.1em; color: var(--muted); margin: 0 0 12px;
-  }
-
-  /* Layout */
+  /* Header — single hairline, no blur, no sticky */
   header.site {
-    position: sticky; top: 0; z-index: 20;
-    background: rgba(251, 251, 250, 0.85);
-    backdrop-filter: saturate(140%) blur(12px);
-    -webkit-backdrop-filter: saturate(140%) blur(12px);
     border-bottom: 1px solid var(--border);
+    background: var(--bg);
   }
   header.site .row {
-    max-width: 1180px; margin: 0 auto; padding: 16px 32px;
-    display: flex; align-items: baseline; justify-content: space-between; gap: 32px;
+    max-width: 1280px; margin: 0 auto; padding: 14px 24px;
+    display: flex; align-items: center; justify-content: space-between; gap: 32px;
+    font-size: 12.5px;
   }
   header.site .brand {
-    font-family: var(--serif); font-size: 22px; letter-spacing: -0.02em;
+    font-family: var(--mono); color: var(--ink); text-transform: uppercase;
+    letter-spacing: 0.08em; font-weight: 500; text-decoration: none;
+  }
+  header.site .brand .dot { color: var(--muted); margin: 0 8px; }
+  header.site nav { display: flex; gap: 18px; font-family: var(--mono); }
+  header.site nav a { color: var(--muted); text-decoration: none; text-transform: uppercase; letter-spacing: 0.06em; font-size: 11.5px; }
+  header.site nav a:hover { color: var(--ink); }
+
+  main { max-width: 1280px; margin: 0 auto; padding: 32px 24px 96px; }
+
+  /* Type primitives */
+  .eyebrow {
+    font-family: var(--mono); font-size: 11px; text-transform: uppercase;
+    letter-spacing: 0.1em; color: var(--muted); margin: 0 0 10px;
+  }
+  h1 { margin: 0; font-family: var(--sans); font-weight: 600; letter-spacing: -0.022em; }
+  h1.page { font-size: 32px; line-height: 1.15; margin-bottom: 8px; }
+  h1.entity { font-size: 28px; line-height: 1.15; margin-bottom: 4px; }
+  h1.home { font-size: 36px; line-height: 1.1; max-width: 22ch; }
+  h2 { margin: 0; font-family: var(--mono); font-size: 11px; font-weight: 500; text-transform: uppercase; letter-spacing: 0.1em; color: var(--muted); }
+  p { color: var(--ink-2); max-width: 64ch; margin: 0; }
+  p.muted { color: var(--muted); }
+  .desc { color: var(--ink-2); font-size: 14px; line-height: 1.55; max-width: 76ch; margin-top: 8px; }
+
+  code, .mono { font-family: var(--mono); font-size: 12.5px; }
+  code.inline {
+    background: var(--border-soft); padding: 1px 5px; font-size: 0.9em;
     color: var(--ink);
   }
-  header.site nav { display: flex; gap: 24px; font-size: 13px; }
-  header.site nav a { color: var(--muted); }
-  header.site nav a:hover { color: var(--ink); text-decoration: none; }
 
-  main { max-width: 1180px; margin: 0 auto; padding: 64px 32px 128px; }
-  main.narrow { max-width: 940px; }
-
-  .lead {
-    font-family: var(--serif); font-size: clamp(20px, 2.1vw, 26px);
-    line-height: 1.4; color: var(--ink-2); letter-spacing: -0.015em;
-    max-width: 38em; margin: 0 0 32px;
-  }
-  p { color: var(--ink-2); max-width: 56ch; }
-  p.muted { color: var(--muted); }
-
-  code, .mono { font-family: var(--mono); font-size: 0.92em; }
-  code.inline {
-    background: var(--surface-soft); border: 1px solid var(--border);
-    padding: 1px 6px; border-radius: 4px; font-size: 0.85em;
-  }
-
-  /* Masthead meta — newspaper style */
+  /* Masthead — newspaper rule meta strip */
   .masthead {
-    display: flex; flex-wrap: wrap; gap: 0; margin: 0 0 56px;
+    margin: 24px 0 0;
     border-top: 1px solid var(--border); border-bottom: 1px solid var(--border);
-    padding: 14px 0; font-family: var(--mono); font-size: 12px;
+    display: grid; grid-auto-flow: column; grid-auto-columns: max-content;
+    gap: 0; overflow-x: auto;
   }
-  .masthead .cell { padding: 0 20px; border-right: 1px solid var(--border); display: flex; gap: 8px; align-items: baseline; }
+  .masthead .cell {
+    padding: 12px 20px; border-right: 1px solid var(--border);
+    display: flex; flex-direction: column; gap: 4px;
+    font-family: var(--mono);
+  }
   .masthead .cell:first-child { padding-left: 0; }
-  .masthead .cell:last-child { border-right: none; }
-  .masthead .key { color: var(--muted); text-transform: uppercase; letter-spacing: 0.08em; font-size: 10.5px; }
-  .masthead .val { color: var(--ink); }
+  .masthead .cell:last-child { border-right: none; padding-right: 0; }
+  .masthead .key { font-size: 10.5px; text-transform: uppercase; letter-spacing: 0.1em; color: var(--muted); }
+  .masthead .val { font-size: 13px; color: var(--ink); }
+  .masthead .val a { color: var(--ink); text-decoration: none; }
+  .masthead .val a:hover { text-decoration: underline; text-decoration-color: var(--ink); }
 
-  /* Action row — text links, no button blob */
+  /* Action row — bracketed mono links */
   .actions {
-    display: flex; flex-wrap: wrap; gap: 24px; margin: 0 0 64px;
-    font-size: 14px;
+    display: flex; flex-wrap: wrap; gap: 12px; margin: 20px 0 40px;
+    font-family: var(--mono); font-size: 12px;
   }
   .actions a {
-    color: var(--ink); display: inline-flex; align-items: center; gap: 6px;
-    border-bottom: 1px solid var(--border); padding-bottom: 2px;
-    transition: border-color 200ms var(--easeOut);
-  }
-  .actions a:hover { text-decoration: none; border-color: var(--ink); }
-  .actions a .arrow { font-family: var(--mono); }
-
-  .btn-primary {
-    display: inline-flex; align-items: center; gap: 8px;
-    background: var(--ink); color: #FFFFFF !important;
-    padding: 12px 20px; border-radius: 6px;
-    font-size: 14px; font-weight: 500; letter-spacing: -0.005em;
-    transition: transform 120ms var(--easeOut), background 200ms var(--easeOut);
-  }
-  .btn-primary:hover { background: #2A2A2A; text-decoration: none; }
-  .btn-primary:active { transform: scale(0.98); }
-
-  /* Pastel chips */
-  .chip {
-    display: inline-flex; align-items: center; gap: 4px;
-    padding: 2px 10px; border-radius: 9999px;
-    font-family: var(--mono); font-size: 11px; font-weight: 500;
-    letter-spacing: 0.06em; text-transform: uppercase;
-    background: var(--surface-soft); color: var(--ink-2);
-    border: 1px solid var(--border);
-  }
-  .chip.blue   { background: var(--blue-bg);   color: var(--blue-fg);   border-color: transparent; }
-  .chip.green  { background: var(--green-bg);  color: var(--green-fg);  border-color: transparent; }
-  .chip.yellow { background: var(--yellow-bg); color: var(--yellow-fg); border-color: transparent; }
-  .chip.red    { background: var(--red-bg);    color: var(--red-fg);    border-color: transparent; }
-  .chip .count { font-weight: 400; opacity: 0.6; letter-spacing: 0; }
-
-  /* Filter bar */
-  .filter-bar {
-    display: flex; flex-wrap: wrap; gap: 6px; align-items: center;
-    margin: 16px 0 24px; font-size: 12px;
-  }
-  .filter-bar .label {
-    font-family: var(--mono); font-size: 11px; text-transform: uppercase;
-    letter-spacing: 0.08em; color: var(--muted); margin-right: 8px;
-  }
-  .filter-bar a.chip { color: var(--muted); }
-  .filter-bar a.chip:hover { text-decoration: none; color: var(--ink); }
-  .filter-bar a.chip.active { background: var(--ink); color: #FFFFFF; border-color: var(--ink); }
-  .filter-bar a.chip.active .count { color: #FFFFFF; opacity: 0.7; }
-  .filter-bar a.clear { color: var(--muted); margin-left: 8px; font-family: var(--mono); font-size: 11px; }
-
-  /* Faux-OS window chrome around the entity table */
-  .frame-window {
-    background: var(--surface); border: 1px solid var(--border); border-radius: 10px;
-    overflow: hidden; transition: border-color 200ms var(--easeOut);
-  }
-  .frame-window .chrome {
-    display: flex; align-items: center; gap: 6px;
-    padding: 12px 16px; border-bottom: 1px solid var(--border);
-    background: var(--surface);
-  }
-  .frame-window .chrome .dot { width: 9px; height: 9px; border-radius: 50%; background: #E5E5E2; }
-  .frame-window .chrome .filename {
-    margin-left: 12px; font-family: var(--mono); font-size: 11px; color: var(--muted);
+    color: var(--ink); text-decoration: none; padding: 4px 10px;
+    border: 1px solid var(--border); background: var(--bg);
     text-transform: lowercase;
   }
+  .actions a:hover { border-color: var(--ink); }
+  .actions a .arr { color: var(--muted); margin-left: 6px; }
+  .actions a:hover .arr { color: var(--ink); }
 
-  /* Entity table */
-  table.entities { width: 100%; border-collapse: collapse; font-size: 14px; }
-  table.entities th, table.entities td {
-    padding: 16px 20px; text-align: left; vertical-align: top;
+  /* Filter row */
+  .filter {
+    display: flex; flex-wrap: wrap; align-items: center; gap: 6px;
+    font-family: var(--mono); font-size: 11.5px; margin: 0 0 12px;
+    padding: 8px 0; border-top: 1px solid var(--border-soft); border-bottom: 1px solid var(--border-soft);
+  }
+  .filter .label { color: var(--muted); text-transform: uppercase; letter-spacing: 0.1em; font-size: 10.5px; margin-right: 8px; }
+  .filter a {
+    color: var(--ink); text-decoration: none;
+    padding: 2px 8px; border: 1px solid var(--border);
+  }
+  .filter a:hover { border-color: var(--ink); }
+  .filter a.on { background: var(--ink); color: var(--bg); border-color: var(--ink); }
+  .filter a .n { color: var(--muted); margin-left: 5px; font-size: 10.5px; }
+  .filter a.on .n { color: var(--bg); opacity: 0.6; }
+  .filter .clear { color: var(--muted); margin-left: 6px; padding: 0 6px; text-decoration: none; font-size: 10.5px; }
+  .filter .clear:hover { color: var(--ink); }
+
+  /* Tables */
+  table.data {
+    width: 100%; border-collapse: collapse;
+    border-top: 1px solid var(--border); border-bottom: 1px solid var(--border);
+    font-size: 13px;
+  }
+  table.data th, table.data td {
+    padding: 10px 14px; text-align: left; vertical-align: top;
+    border-bottom: 1px solid var(--border-soft);
+    border-right: 1px solid var(--border-soft);
+    white-space: nowrap;
+  }
+  table.data tr:last-child td { border-bottom: none; }
+  table.data th:last-child, table.data td:last-child { border-right: none; }
+  table.data th {
+    font-family: var(--mono); font-weight: 500; font-size: 10.5px;
+    text-transform: uppercase; letter-spacing: 0.1em; color: var(--muted);
+    background: var(--bg); padding-top: 12px; padding-bottom: 12px;
     border-bottom: 1px solid var(--border);
   }
-  table.entities tr:last-child td { border-bottom: none; }
-  table.entities th {
-    background: transparent; font-family: var(--mono); font-weight: 500;
-    font-size: 10.5px; text-transform: uppercase; letter-spacing: 0.08em;
-    color: var(--muted); padding-top: 14px; padding-bottom: 14px;
-  }
-  table.entities tr:hover td { background: var(--surface-soft); }
-  table.entities td.name a { font-weight: 500; color: var(--ink); }
-  table.entities td.name a:hover { text-decoration: none; color: var(--blue-fg); }
-  table.entities td .id { display: block; font-family: var(--mono); font-size: 11.5px; color: var(--muted); margin-top: 2px; }
-  .empty { color: var(--muted); }
-  .empty::before { content: "—"; }
+  table.data tr:hover td { background: var(--row-hover); }
+  table.data td.name a { color: var(--ink); text-decoration: none; font-weight: 500; }
+  table.data td.name a:hover { text-decoration: underline; text-underline-offset: 2px; text-decoration-thickness: 1px; }
+  table.data td.id, table.data td.mono { font-family: var(--mono); font-size: 12px; color: var(--ink-2); }
+  table.data td.mono.muted { color: var(--muted); }
+  table.data td.num { font-family: var(--mono); text-align: right; font-variant-numeric: tabular-nums; }
+  table.data .empty { color: var(--muted); }
+  table.data .empty::before { content: "—"; }
 
-  /* Source provenance — refined hover card */
-  .src {
-    display: inline-block; cursor: help; position: relative;
-    font-family: var(--mono); color: var(--muted); margin-left: 6px;
-    font-size: 11px; vertical-align: super; line-height: 1; opacity: 0.6;
+  /* Source affordance — small, mono, links to entity page */
+  .src-mark {
+    display: inline; font-family: var(--mono); font-size: 10.5px;
+    color: var(--muted); margin-left: 6px; vertical-align: super; line-height: 1;
+    text-decoration: none;
   }
-  .src:hover { opacity: 1; color: var(--ink); }
-  .src .tip {
-    position: absolute; left: 0; top: calc(100% + 8px);
-    width: 380px; max-width: 80vw; padding: 16px 18px;
-    background: var(--surface); color: var(--ink);
-    border: 1px solid var(--border); border-radius: 8px;
-    box-shadow: 0 1px 0 rgba(0,0,0,0.02), 0 8px 24px rgba(17, 17, 17, 0.06);
-    z-index: 30; pointer-events: none;
-    opacity: 0; transform: translateY(-4px);
-    transition: opacity 140ms var(--easeOut), transform 140ms var(--easeOut);
-  }
-  .src:hover .tip { opacity: 1; transform: translateY(0); pointer-events: auto; }
-  .src .tip .url {
-    font-family: var(--mono); font-size: 11px; color: var(--muted);
-    word-break: break-all; margin-bottom: 10px; letter-spacing: 0;
-  }
-  .src .tip .quote {
-    font-family: var(--serif); font-style: italic; font-size: 15px;
-    color: var(--ink); line-height: 1.5; letter-spacing: -0.005em;
-    margin-bottom: 10px;
-  }
-  .src .tip .meta {
-    font-family: var(--mono); font-size: 10.5px; color: var(--muted);
-    text-transform: uppercase; letter-spacing: 0.08em;
-  }
+  .src-mark:hover { color: var(--ink); text-decoration: none; }
 
   /* Pager */
-  .pager { display: flex; gap: 16px; align-items: center; margin-top: 32px; font-size: 13px; font-family: var(--mono); }
-  .pager a { color: var(--ink); border-bottom: 1px solid var(--border); padding-bottom: 2px; }
-  .pager a:hover { text-decoration: none; border-color: var(--ink); }
-  .pager span.end { color: var(--muted); }
-
-  /* Repo index frame cards */
-  .frame-grid { display: grid; gap: 12px; margin-bottom: 56px; }
-  .frame-card {
-    display: block; padding: 28px 32px;
-    background: var(--surface); border: 1px solid var(--border); border-radius: 10px;
-    color: var(--ink); transition: border-color 200ms var(--easeOut), box-shadow 200ms var(--easeOut);
-  }
-  .frame-card:hover {
-    text-decoration: none; border-color: var(--ink-2);
-    box-shadow: 0 1px 0 rgba(0,0,0,0.02), 0 8px 24px rgba(17,17,17,0.04);
-  }
-  .frame-card .name { font-family: var(--serif); font-size: 28px; letter-spacing: -0.02em; line-height: 1.1; margin-bottom: 4px; }
-  .frame-card .path { font-family: var(--mono); font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 14px; }
-  .frame-card .desc { color: var(--ink-2); font-size: 15px; line-height: 1.5; max-width: 60ch; margin-bottom: 16px; }
-  .frame-card .row { display: flex; gap: 18px; font-family: var(--mono); font-size: 11.5px; color: var(--muted); }
-  .frame-card .row .err { color: var(--red-fg); }
-
-  /* Home — bento */
-  .bento { display: grid; gap: 16px; grid-template-columns: 2fr 1fr; margin: 0 0 80px; }
-  .bento .cell {
-    background: var(--surface); border: 1px solid var(--border); border-radius: 10px;
-    padding: 36px;
-  }
-  .bento .cell .eyebrow { margin-bottom: 16px; }
-  .bento .cell h2 { margin-bottom: 16px; }
-  .bento .cell p { color: var(--ink-2); margin: 0 0 18px; max-width: none; }
-  .bento .cell.tall { grid-row: span 2; }
-  @media (max-width: 760px) {
-    .bento { grid-template-columns: 1fr; }
-    .bento .cell.tall { grid-row: auto; }
-  }
-
-  /* Entity view */
-  .breadcrumb { font-family: var(--mono); font-size: 12px; color: var(--muted); margin-bottom: 24px; text-transform: uppercase; letter-spacing: 0.08em; }
-  .breadcrumb a { color: var(--muted); }
-  .breadcrumb a:hover { color: var(--ink); text-decoration: none; }
-  .entity-id { font-family: var(--mono); font-size: 13px; color: var(--muted); margin-bottom: 56px; }
-
-  .field-grid { display: grid; grid-template-columns: 200px 1fr auto; gap: 0; margin-bottom: 64px; border-top: 1px solid var(--border); }
-  .field-grid > div { padding: 16px 0; border-bottom: 1px solid var(--border); display: flex; align-items: baseline; }
-  .field-grid .key { font-family: var(--mono); font-size: 11.5px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.08em; padding-right: 24px; }
-  .field-grid .key .req { display: inline-block; margin-left: 6px; padding: 1px 6px; background: var(--yellow-bg); color: var(--yellow-fg); border-radius: 9999px; font-size: 9.5px; letter-spacing: 0.04em; }
-  .field-grid .val { color: var(--ink); }
-  .field-grid .ts { font-family: var(--mono); font-size: 11px; color: var(--muted); padding-left: 24px; white-space: nowrap; }
-
-  /* Evidence cards — editorial pull-quote */
-  .evidence { display: grid; gap: 16px; }
-  .evidence article {
-    background: var(--surface); border: 1px solid var(--border); border-radius: 10px;
-    padding: 32px; position: relative;
-  }
-  .evidence article::before {
-    content: ""; position: absolute; left: 0; top: 24px; bottom: 24px;
-    width: 3px; background: var(--surface-soft); border-radius: 0 2px 2px 0;
-  }
-  .evidence article.blue::before { background: var(--blue-bg); }
-  .evidence article.green::before { background: var(--green-bg); }
-  .evidence article.yellow::before { background: var(--yellow-bg); }
-  .evidence article .field-name {
-    font-family: var(--mono); font-size: 11px; color: var(--muted);
-    text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 6px;
-  }
-  .evidence article .field-value {
-    font-family: var(--serif); font-size: 26px; line-height: 1.15;
-    letter-spacing: -0.02em; color: var(--ink); margin-bottom: 18px;
-  }
-  .evidence article blockquote {
-    margin: 0 0 16px; font-family: var(--serif); font-style: italic;
-    font-size: 19px; line-height: 1.45; letter-spacing: -0.01em; color: var(--ink-2);
-  }
-  .evidence article blockquote::before { content: "\\201C"; margin-right: 2px; }
-  .evidence article blockquote::after { content: "\\201D"; margin-left: 2px; }
-  .evidence article .source-meta {
-    display: flex; align-items: baseline; justify-content: space-between; gap: 16px;
-    padding-top: 14px; border-top: 1px solid var(--border);
+  .pager {
+    margin-top: 16px; display: flex; gap: 18px; align-items: baseline;
     font-family: var(--mono); font-size: 11.5px; color: var(--muted);
   }
-  .evidence article .source-meta a { color: var(--ink); }
+  .pager a { color: var(--ink); text-decoration: none; }
+  .pager a:hover { text-decoration: underline; }
 
-  /* Connect details — accordion, no card */
-  details.connect {
-    margin: 80px 0 0; padding-top: 24px; border-top: 1px solid var(--border);
+  /* Repo index — frame card list */
+  .frames-list { border-top: 1px solid var(--border); border-bottom: 1px solid var(--border); margin: 24px 0; }
+  .frames-list a.card {
+    display: grid; grid-template-columns: 1fr auto auto auto;
+    gap: 24px; align-items: baseline;
+    padding: 16px 4px; border-bottom: 1px solid var(--border-soft);
+    text-decoration: none; color: var(--ink);
   }
+  .frames-list a.card:last-child { border-bottom: none; }
+  .frames-list a.card:hover { background: var(--row-hover); }
+  .frames-list a.card .title { font-size: 16px; font-weight: 500; }
+  .frames-list a.card .path { font-family: var(--mono); font-size: 11px; color: var(--muted); margin-top: 2px; }
+  .frames-list a.card .desc { color: var(--ink-2); font-size: 13px; margin-top: 6px; max-width: 60ch; line-height: 1.45; }
+  .frames-list a.card .col { font-family: var(--mono); font-size: 12px; color: var(--muted); white-space: nowrap; min-width: 7ch; text-align: right; }
+  .frames-list a.card .col .k { display: block; font-size: 10px; text-transform: uppercase; letter-spacing: 0.08em; color: var(--muted); margin-bottom: 2px; }
+  .frames-list a.card .col .v { color: var(--ink); }
+
+  /* Entity view */
+  .breadcrumb { font-family: var(--mono); font-size: 11.5px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 18px; }
+  .breadcrumb a { color: var(--muted); text-decoration: none; }
+  .breadcrumb a:hover { color: var(--ink); }
+  .entity-id { font-family: var(--mono); font-size: 12px; color: var(--muted); margin-bottom: 36px; }
+
+  table.fields { width: 100%; border-collapse: collapse; border-top: 1px solid var(--border); border-bottom: 1px solid var(--border); margin-bottom: 48px; font-size: 13px; }
+  table.fields td { padding: 10px 0; border-bottom: 1px solid var(--border-soft); vertical-align: top; }
+  table.fields tr:last-child td { border-bottom: none; }
+  table.fields td.k { width: 220px; font-family: var(--mono); font-size: 11.5px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.08em; padding-top: 13px; }
+  table.fields td.k .req { display: inline-block; margin-left: 6px; padding: 0 5px; font-size: 9.5px; letter-spacing: 0.06em; color: var(--muted); border: 1px solid var(--border); }
+  table.fields td.v { color: var(--ink); }
+  table.fields td.v a { color: var(--link); text-decoration: none; }
+  table.fields td.v a:hover { text-decoration: underline; }
+  table.fields td.v .mono { color: var(--ink-2); }
+  table.fields td.s { width: 280px; text-align: right; font-family: var(--mono); font-size: 11.5px; color: var(--muted); white-space: nowrap; }
+  table.fields td.s a { color: var(--ink-2); text-decoration: none; }
+  table.fields td.s a:hover { text-decoration: underline; }
+  table.fields td.t { width: 100px; text-align: right; font-family: var(--mono); font-size: 11px; color: var(--muted); white-space: nowrap; padding-top: 13px; }
+
+  /* Evidence — mono transcript style */
+  .evidence-list { border-top: 1px solid var(--border); }
+  .evidence-list .item { padding: 20px 0; border-bottom: 1px solid var(--border-soft); }
+  .evidence-list .item:last-child { border-bottom: none; }
+  .evidence-list .item .head {
+    display: flex; align-items: baseline; gap: 16px; flex-wrap: wrap;
+    margin-bottom: 12px;
+  }
+  .evidence-list .item .field {
+    font-family: var(--mono); font-size: 11px; color: var(--muted);
+    text-transform: uppercase; letter-spacing: 0.1em;
+  }
+  .evidence-list .item .value {
+    font-family: var(--mono); font-size: 13.5px; color: var(--ink);
+    background: var(--border-soft); padding: 1px 8px;
+  }
+  .evidence-list .item .meta {
+    margin-left: auto; font-family: var(--mono); font-size: 11px; color: var(--muted);
+  }
+  .evidence-list .item .meta a { color: var(--ink-2); text-decoration: none; }
+  .evidence-list .item .meta a:hover { text-decoration: underline; }
+  .evidence-list .item blockquote {
+    margin: 0; padding: 12px 16px;
+    border-left: 2px solid var(--border);
+    font-family: var(--sans); font-size: 14px; line-height: 1.55;
+    color: var(--ink); max-width: 76ch;
+  }
+  .evidence-list .item blockquote::before { content: "“"; color: var(--muted); margin-right: 2px; }
+  .evidence-list .item blockquote::after { content: "”"; color: var(--muted); margin-left: 2px; }
+
+  /* Connect block */
+  details.connect { margin: 64px 0 0; padding-top: 24px; border-top: 1px solid var(--border); }
   details.connect summary {
-    list-style: none; cursor: pointer; display: flex; align-items: baseline;
-    gap: 12px; font-family: var(--serif); font-size: 22px; letter-spacing: -0.02em; color: var(--ink);
+    list-style: none; cursor: pointer;
+    font-family: var(--mono); font-size: 11px; text-transform: uppercase;
+    letter-spacing: 0.1em; color: var(--ink); display: flex; align-items: center; gap: 10px;
   }
   details.connect summary::-webkit-details-marker { display: none; }
-  details.connect summary::before {
-    content: "+"; font-family: var(--mono); color: var(--muted); font-size: 18px;
-    transition: transform 200ms var(--easeOut);
-  }
-  details.connect[open] summary::before { content: "−"; }
-  details.connect .body { padding-top: 20px; }
+  details.connect summary::before { content: "[+]"; color: var(--muted); }
+  details.connect[open] summary::before { content: "[−]"; color: var(--muted); }
+  details.connect .body { padding-top: 16px; }
   details.connect pre {
-    background: var(--surface); border: 1px solid var(--border); border-radius: 8px;
-    padding: 16px 20px; overflow-x: auto; font-family: var(--mono); font-size: 12.5px;
-    line-height: 1.55; color: var(--ink-2); margin: 12px 0;
+    background: #0A0A0A; color: #E5E5E5;
+    border: 1px solid var(--ink); padding: 16px 20px;
+    font-family: var(--mono); font-size: 12px; line-height: 1.55;
+    overflow-x: auto; margin: 12px 0;
   }
-  details.connect .note { font-family: var(--mono); font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.08em; margin-top: 16px; }
+  details.connect .note { font-family: var(--mono); font-size: 10.5px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.08em; }
 
-  /* Scroll-fade — only what we mark */
-  [data-fade] {
-    opacity: 0; transform: translateY(12px);
-    transition: opacity 600ms var(--easeOut) calc(var(--idx, 0) * 80ms),
-                transform 600ms var(--easeOut) calc(var(--idx, 0) * 80ms);
-  }
-  [data-fade].in-view { opacity: 1; transform: translateY(0); }
-  @media (prefers-reduced-motion: reduce) {
-    [data-fade] { opacity: 1; transform: none; transition: none; }
-  }
+  /* Section spacers */
+  section { margin-bottom: 48px; }
+  section:last-child { margin-bottom: 0; }
 `);
 
-const SCROLL_JS = raw(`
-  <script>
-    (function() {
-      var els = document.querySelectorAll('[data-fade]');
-      els.forEach(function(el, i) { el.style.setProperty('--idx', String(i)); });
-      if (!('IntersectionObserver' in window)) {
-        els.forEach(function(el) { el.classList.add('in-view'); });
-        return;
-      }
-      var io = new IntersectionObserver(function(entries) {
-        entries.forEach(function(e) {
-          if (e.isIntersecting) { e.target.classList.add('in-view'); io.unobserve(e.target); }
-        });
-      }, { threshold: 0.08, rootMargin: '0px 0px -40px 0px' });
-      els.forEach(function(el) { io.observe(el); });
-    })();
-  </script>
-`);
-
-function shell(
-  titleText: string,
-  body: HtmlEscapedString | string,
-  opts: { narrow?: boolean } = {},
-): HtmlEscapedString {
+function shell(titleText: string, body: HtmlEscapedString | string): HtmlEscapedString {
   return html`<!doctype html>
 <html lang="en">
 <head>
@@ -387,21 +276,19 @@ ${FONT_LINK}
 <style>${STYLE}</style>
 </head>
 <body>
-<div class="ambient" aria-hidden="true"></div>
 <header class="site">
   <div class="row">
-    <a href="/" class="brand">frames</a>
+    <a href="/" class="brand">frames<span class="dot">·</span>cloud</a>
     <nav>
       <a href="/microchipgnu/ai-agent-wallets-eu">example</a>
-      <a href="/microchipgnu/ai-agent-wallets">multi-frame</a>
+      <a href="/microchipgnu/ai-agent-wallets">multi</a>
       <a href="https://github.com/microchipgnu/frames-cloud">source</a>
     </nav>
   </div>
 </header>
-<main${opts.narrow ? raw(' class="narrow"') : ""}>
+<main>
 ${body}
 </main>
-${SCROLL_JS}
 </body>
 </html>`;
 }
@@ -410,44 +297,22 @@ ${SCROLL_JS}
 // helpers
 // ---------------------------------------------------------------------------
 
-function chipForValue(value: string): "blue" | "green" | "yellow" | "" {
-  if (value.length === 2 && value === value.toUpperCase()) return "blue";
-  if (/^(payment_infra|wallet|key_management|custody)$/.test(value)) return "green";
-  if (/^(preseed|seed|series_[a-c])$/.test(value)) return "yellow";
-  return "";
+function host(url: string): string {
+  try {
+    return new URL(url).host;
+  } catch {
+    return url;
+  }
 }
 
-function srcTip(src: Source | undefined): HtmlEscapedString | "" {
-  if (!src) return "";
-  return html`<span class="src" tabindex="0" aria-label="source">↗
-  <span class="tip">
-    <span class="url">${src.url}</span>
-    <span class="quote">${src.excerpt ?? "(no excerpt)"}</span>
-    <span class="meta">retrieved ${src.retrieved_at}</span>
-  </span>
-</span>`;
-}
-
-function fieldCell(value: unknown, src: Source | undefined): HtmlEscapedString {
+function fieldCellPlain(value: unknown): HtmlEscapedString {
   if (value === undefined || value === null) {
     return html`<span class="empty"></span>`;
   }
   if (typeof value === "string" && value.startsWith("http")) {
-    const host = (() => {
-      try {
-        return new URL(value).host;
-      } catch {
-        return value;
-      }
-    })();
-    return html`<a href="${value}" target="_blank" rel="noopener">${host}</a>${srcTip(src)}`;
+    return html`<a class="plain" href="${value}" target="_blank" rel="noopener">${host(value)}</a>`;
   }
-  if (typeof value === "string") {
-    const tone = chipForValue(value);
-    if (tone) return html`<span class="chip ${tone}">${value}</span>${srcTip(src)}`;
-    return html`<span>${value}</span>${srcTip(src)}`;
-  }
-  return html`<span>${String(value)}</span>${srcTip(src)}`;
+  return html`<span>${String(value)}</span>`;
 }
 
 // ---------------------------------------------------------------------------
@@ -456,62 +321,61 @@ function fieldCell(value: unknown, src: Source | undefined): HtmlEscapedString {
 
 export function renderHome(): HtmlEscapedString {
   const body = html`
-<section data-fade style="margin-bottom: 96px;">
-  <div class="eyebrow">frames.dev — runtime for evidence-backed datasets</div>
-  <h1 class="display">A typed Wikipedia<br/>your agents can't fake.</h1>
-  <p class="lead" style="margin-top: 28px;">
-    Drop a <code class="inline">schema.yml</code> + <code class="inline">events.ndjson</code> into a public GitHub repo. A paginated JSON API and a public page come live at the matching URL — no signup, no deploy, no dashboard. Every cell in every dataset carries a verbatim quote from the source it came from.
-  </p>
-  <div style="margin-top: 36px;">
-    <a class="btn-primary" href="/microchipgnu/ai-agent-wallets-eu">Open example dataset <span style="font-family: var(--mono);">→</span></a>
-  </div>
+<section>
+  <div class="eyebrow">frames-cloud · github-resolver runtime for evidence-backed datasets</div>
+  <h1 class="home">Live datasets from any public GitHub repo.</h1>
+  <p class="desc">A frame is a directory containing <code class="inline">schema.yml</code> and <code class="inline">events.ndjson</code>. Push the repo and the URL works — paginated JSON API plus a public table view, with verbatim source provenance per cell. URL = filesystem path inside the repo.</p>
 </section>
 
-<section data-fade>
-  <div class="eyebrow">how it works</div>
-  <div class="bento">
-    <div class="cell tall">
-      <h2>URL = filesystem path.</h2>
-      <p>A frame is just a directory containing <code class="inline">schema.yml</code>. <code class="inline">frames.dev/&lt;user&gt;/&lt;repo&gt;</code> resolves to the frame at the repo root; sub-paths resolve to nested frames. Repos with multiple frames just put each one in its own folder — there is no manifest file, no registration step, no protocol change.</p>
-      <p>Cache key is the commit SHA, so once a request lands, the projection is immutable forever. Pushes invalidate via webhook in under two seconds.</p>
-    </div>
-    <div class="cell">
-      <div class="eyebrow">api</div>
-      <h2 style="font-size: 22px;">Mirror at <code class="inline" style="font-size: 0.85em;">/api/v1</code></h2>
-      <p>Cursor pagination, ETag/304, range filters, sparse fieldsets, evidence inline. Same paths, JSON output.</p>
-    </div>
-    <div class="cell">
-      <div class="eyebrow">agents</div>
-      <h2 style="font-size: 22px;">MCP HTTP runtime</h2>
-      <p>Connect <code class="inline" style="font-size: 0.85em;">/mcp/&lt;user&gt;/&lt;repo&gt;</code> to your agent via HTTP MCP. Read with the same seven verbs the local server exposes today.</p>
-    </div>
-  </div>
+<section>
+  <h2>endpoints</h2>
+  <table class="data" style="margin-top: 12px;">
+    <thead><tr>
+      <th>method</th><th>path</th><th>response</th>
+    </tr></thead>
+    <tbody>
+      <tr><td class="mono">GET</td><td class="mono">/&lt;user&gt;/&lt;repo&gt;[/&lt;frame_path&gt;]</td><td>html — entity table view</td></tr>
+      <tr><td class="mono">GET</td><td class="mono">/&lt;user&gt;/&lt;repo&gt;[/&lt;frame_path&gt;]/entities/&lt;id&gt;</td><td>html — entity detail with evidence</td></tr>
+      <tr><td class="mono">GET</td><td class="mono">/api/v1/&lt;user&gt;/&lt;repo&gt;[/&lt;frame_path&gt;]/entities</td><td>json — paginated, cursor on entity_id</td></tr>
+      <tr><td class="mono">GET</td><td class="mono">/api/v1/&lt;user&gt;/&lt;repo&gt;[/&lt;frame_path&gt;]/entities/&lt;id&gt;</td><td>json — full entity + all evidence</td></tr>
+      <tr><td class="mono">GET</td><td class="mono">/api/v1/&lt;user&gt;/&lt;repo&gt;[/&lt;frame_path&gt;]/schema</td><td>json — schema.yml as JSON</td></tr>
+      <tr><td class="mono">GET</td><td class="mono">/api/v1/&lt;user&gt;/&lt;repo&gt;[/&lt;frame_path&gt;]/readme</td><td>md — README.md</td></tr>
+      <tr><td class="mono">GET</td><td class="mono">/api/v1/&lt;user&gt;/&lt;repo&gt;/_frames</td><td>json — list every schema.yml in the repo</td></tr>
+    </tbody>
+  </table>
 </section>
 
-<section data-fade>
-  <div class="eyebrow">live datasets</div>
-  <h2 style="margin-bottom: 24px;">Examples on this host</h2>
-  <div class="frame-grid">
-    <a class="frame-card" href="/microchipgnu/ai-agent-wallets-eu">
-      <div class="name">ai_agent_wallets_eu</div>
-      <div class="path">microchipgnu / ai-agent-wallets-eu</div>
-      <div class="desc">EU-headquartered companies building programmable wallets and payment infrastructure for AI agents. 13 entities, every fact sourced from a verbatim web excerpt.</div>
-      <div class="row"><span>13 entities</span><span>9 countries</span><span>single-frame repo</span></div>
+<section>
+  <h2>live datasets</h2>
+  <div class="frames-list">
+    <a class="card" href="/microchipgnu/ai-agent-wallets-eu">
+      <div>
+        <div class="title">ai_agent_wallets_eu</div>
+        <div class="path">microchipgnu / ai-agent-wallets-eu</div>
+        <div class="desc">EU-headquartered companies building programmable wallets and payment infrastructure for AI agents. Every fact verbatim-sourced.</div>
+      </div>
+      <div class="col"><span class="k">entities</span><span class="v">13</span></div>
+      <div class="col"><span class="k">countries</span><span class="v">9</span></div>
+      <div class="col"><span class="k">type</span><span class="v">single-frame</span></div>
     </a>
-    <a class="frame-card" href="/microchipgnu/ai-agent-wallets">
-      <div class="name">ai-agent-wallets</div>
-      <div class="path">microchipgnu / ai-agent-wallets</div>
-      <div class="desc">Multi-frame repo with sibling <code class="inline" style="font-size: 0.85em;">eu/</code> and <code class="inline" style="font-size: 0.85em;">us/</code> datasets sharing a field shape but differing on the <code class="inline" style="font-size: 0.85em;">hq_country</code> enum.</div>
-      <div class="row"><span>2 frames</span><span>same schema, different scope</span></div>
+    <a class="card" href="/microchipgnu/ai-agent-wallets">
+      <div>
+        <div class="title">ai-agent-wallets</div>
+        <div class="path">microchipgnu / ai-agent-wallets</div>
+        <div class="desc">Multi-frame repo: <code class="inline">eu/</code> + <code class="inline">us/</code> sibling datasets sharing field shape but differing on hq_country enum.</div>
+      </div>
+      <div class="col"><span class="k">frames</span><span class="v">2</span></div>
+      <div class="col"><span class="k">scope</span><span class="v">EU + US</span></div>
+      <div class="col"><span class="k">type</span><span class="v">multi-frame</span></div>
     </a>
   </div>
 </section>
 `;
-  return shell("frames.dev", body);
+  return shell("frames-cloud", body);
 }
 
 // ---------------------------------------------------------------------------
-// Repo index (multi-frame, no root schema)
+// Repo index
 // ---------------------------------------------------------------------------
 
 export type RepoFrameSummary = {
@@ -533,41 +397,42 @@ export function renderRepoIndex(
   const githubUrl = `https://github.com/${user}/${repo}`;
   const cards = frames.map((f) => {
     const url = `/${user}/${repo}${f.frame_path ? "/" + f.frame_path : ""}`;
-    return html`<a href="${url}" class="frame-card" data-fade>
-  <div class="name">${f.schema_name ?? f.slug}</div>
-  <div class="path">${f.frame_path || "(root)"}</div>
-  ${f.description ? html`<div class="desc">${f.description.split("\n")[0]}</div>` : ""}
-  <div class="row">
-    ${f.entity_count !== undefined ? html`<span>${f.entity_count} ${f.entity_count === 1 ? "entity" : "entities"}</span>` : ""}
-    ${f.max_ts ? html`<span>updated ${f.max_ts.split("T")[0]}</span>` : ""}
-    ${f.error ? html`<span class="err">${f.error}</span>` : ""}
-  </div>
-</a>`;
+    return html`<a class="card" href="${url}">
+      <div>
+        <div class="title">${f.schema_name ?? f.slug}</div>
+        <div class="path">${f.frame_path || "(root)"}</div>
+        ${f.description ? html`<div class="desc">${f.description.split("\n")[0]}</div>` : ""}
+      </div>
+      <div class="col"><span class="k">entities</span><span class="v">${f.entity_count ?? "—"}</span></div>
+      <div class="col"><span class="k">updated</span><span class="v">${f.max_ts ? f.max_ts.split("T")[0] : "—"}</span></div>
+      <div class="col"><span class="k">path</span><span class="v">${f.frame_path || "."}</span></div>
+    </a>`;
   });
 
   const body = html`
-<section data-fade>
+<section>
   <div class="eyebrow">multi-frame repository</div>
-  <h1 class="page">${user} / ${repo}</h1>
-  <p class="lead">${frames.length} ${frames.length === 1 ? "frame" : "frames"} in this repo. Each is a directory with its own <code class="inline">schema.yml</code> and <code class="inline">events.ndjson</code>.</p>
+  <h1 class="page">${user}/${repo}</h1>
+  <p class="desc">${frames.length} ${frames.length === 1 ? "frame" : "frames"}. Each is a directory with its own schema.yml and events.ndjson.</p>
 </section>
 
-<div class="masthead" data-fade>
-  <span class="cell"><span class="key">repo</span><a class="val" href="${githubUrl}">github.com/${user}/${repo}</a></span>
-  <span class="cell"><span class="key">commit</span><span class="val">${sha.slice(0, 7)}</span></span>
-  <span class="cell"><span class="key">frames</span><span class="val">${frames.length}</span></span>
+<div class="masthead">
+  <div class="cell"><span class="key">repo</span><span class="val"><a href="${githubUrl}">${user}/${repo}</a></span></div>
+  <div class="cell"><span class="key">commit</span><span class="val">${sha.slice(0, 7)}</span></div>
+  <div class="cell"><span class="key">frames</span><span class="val">${frames.length}</span></div>
 </div>
 
-<div class="frame-grid">
-  ${cards}
-</div>
+<section>
+  <h2>frames</h2>
+  <div class="frames-list">${cards}</div>
+</section>
 
-<section data-fade>
-  <div class="eyebrow">api</div>
-  <p class="muted" style="font-family: var(--mono); font-size: 13px;">GET /api/v1/${user}/${repo}/_frames &nbsp;·&nbsp; GET /api/v1/${user}/${repo}/&lt;frame_path&gt;/entities</p>
+<section>
+  <h2>api</h2>
+  <p class="muted" style="font-family: var(--mono); font-size: 12px;">GET /api/v1/${user}/${repo}/_frames &nbsp;·&nbsp; GET /api/v1/${user}/${repo}/&lt;frame_path&gt;/entities</p>
 </section>
 `;
-  return shell(`${user}/${repo} — frames.dev`, body);
+  return shell(`${user}/${repo} — frames-cloud`, body);
 }
 
 // ---------------------------------------------------------------------------
@@ -582,7 +447,8 @@ export function renderFrame(
   countryCounts: Map<string, number>,
 ): HtmlEscapedString {
   const fieldOrder = Object.keys(ds.schema.fields);
-  const visibleFields = fieldOrder.slice(0, Math.min(6, fieldOrder.length));
+  // skip "name" — we render it as the row header. include up to 6 more.
+  const visibleFields = fieldOrder.filter((f) => f !== "name").slice(0, 6);
   const githubUrl = `https://github.com/${ds.user}/${ds.repo}${
     ds.frame_path ? `/tree/main/${ds.frame_path}` : ""
   }`;
@@ -593,89 +459,91 @@ export function renderFrame(
   const path = `/${ds.user}/${ds.repo}${ds.frame_path ? "/" + ds.frame_path : ""}`;
   const totalEntities = [...ds.entities.values()].filter((e) => !e.removed).length;
 
-  const filterChip = (val: string, count: number, isActive: boolean) => {
+  const filterLink = (val: string, count: number, isActive: boolean) => {
     let next = activeCountries.slice();
     if (isActive) next = next.filter((v) => v !== val);
     else next.push(val);
     const qs = next.length > 0 ? `?filter[hq_country]=${next.join(",")}` : "";
-    return html`<a class="chip ${isActive ? "active" : ""}" href="${path + qs}">${val}<span class="count">${count}</span></a>`;
+    return html`<a class="${isActive ? "on" : ""}" href="${path + qs}">${val}<span class="n">${count}</span></a>`;
   };
 
   const filterBar =
     countryRow.length > 0
-      ? html`<div class="filter-bar">
+      ? html`<div class="filter">
   <span class="label">hq_country</span>
   ${countryRow
     .filter((c) => (countryCounts.get(c) ?? 0) > 0)
-    .map((c) => filterChip(c, countryCounts.get(c) ?? 0, activeCountries.includes(c)))}
-  ${activeCountries.length > 0 ? html`<a class="clear" href="${path}">clear ↻</a>` : ""}
+    .map((c) => filterLink(c, countryCounts.get(c) ?? 0, activeCountries.includes(c)))}
+  ${activeCountries.length > 0 ? html`<a class="clear" href="${path}">[clear]</a>` : ""}
 </div>`
       : "";
 
-  const colHeaders = visibleFields.map((f) => html`<th>${f}</th>`);
+  const colHeaders = html`
+    <th>name</th>
+    <th>id</th>
+    ${visibleFields.map((f) => html`<th>${f}</th>`)}
+  `;
 
   const rows = entities.map((e) => {
-    const cells = visibleFields.slice(1).map((f) => html`<td>${fieldCell(e.fields[f], e.evidence[f])}</td>`);
+    const cells = visibleFields.map((f) => {
+      const v = e.fields[f];
+      const isMonoField = ["hq_country", "founded_year", "category", "funding_stage", "last_news_date"].includes(f);
+      const isLink = typeof v === "string" && v.startsWith("http");
+      if (v === undefined || v === null) return html`<td><span class="empty"></span></td>`;
+      if (isLink) return html`<td class="mono"><a class="plain" href="${v as string}" target="_blank" rel="noopener">${host(v as string)}</a></td>`;
+      if (isMonoField) return html`<td class="mono">${String(v)}</td>`;
+      return html`<td>${String(v)}</td>`;
+    });
     return html`<tr>
-  <td class="name">
-    <a href="${path}/entities/${e.entity_id}">${String(e.fields.name ?? e.entity_id)}</a>
-    <span class="id">${e.entity_id}</span>
-  </td>
-  ${cells}
-</tr>`;
+      <td class="name"><a href="${path}/entities/${e.entity_id}">${String(e.fields.name ?? e.entity_id)}</a></td>
+      <td class="id mono muted">${e.entity_id}</td>
+      ${cells}
+    </tr>`;
   });
 
-  const filename = ds.frame_path
-    ? `${ds.repo}/${ds.frame_path}/events.ndjson`
-    : `${ds.repo}/events.ndjson`;
-
   const body = html`
-<section data-fade>
-  <div class="eyebrow">${ds.entity_type ?? "entity"} · ${ds.user} / ${ds.repo}${ds.frame_path ? " / " + ds.frame_path : ""}</div>
+<section>
+  <div class="eyebrow">${ds.entity_type ?? "entity"} · ${ds.user}/${ds.repo}${ds.frame_path ? "/" + ds.frame_path : ""}</div>
   <h1 class="page">${ds.schema.name}</h1>
-  <p class="lead">${(ds.schema.description ?? "").split("\n").join(" ").trim()}</p>
+  <p class="desc">${(ds.schema.description ?? "").split("\n").join(" ").trim()}</p>
 </section>
 
-<div class="masthead" data-fade>
-  <span class="cell"><span class="key">repo</span><a class="val" href="${githubUrl}">github.com/${ds.user}/${ds.repo}${ds.frame_path ? "/" + ds.frame_path : ""}</a></span>
-  <span class="cell"><span class="key">commit</span><span class="val">${ds.sha.slice(0, 7)}</span></span>
-  <span class="cell"><span class="key">entities</span><span class="val">${totalEntities}</span></span>
-  <span class="cell"><span class="key">updated</span><span class="val">${ds.max_ts ? ds.max_ts.split("T")[0] : "—"}</span></span>
+<div class="masthead">
+  <div class="cell"><span class="key">repo</span><span class="val"><a href="${githubUrl}">${ds.user}/${ds.repo}${ds.frame_path ? "/" + ds.frame_path : ""}</a></span></div>
+  <div class="cell"><span class="key">commit</span><span class="val">${ds.sha.slice(0, 7)}</span></div>
+  <div class="cell"><span class="key">entities</span><span class="val">${totalEntities}</span></div>
+  <div class="cell"><span class="key">updated</span><span class="val">${ds.max_ts ? ds.max_ts.split("T")[0] : "—"}</span></div>
+  <div class="cell"><span class="key">protocol</span><span class="val">${ds.schema.frame_protocol}</span></div>
 </div>
 
-<div class="actions" data-fade>
-  <a href="${apiUrl}">JSON API <span class="arrow">↗</span></a>
-  <a href="/api/v1${path}/schema">Schema <span class="arrow">↗</span></a>
-  <a href="${githubUrl}">GitHub <span class="arrow">↗</span></a>
-  <a href="#connect">Connect to AI agent <span class="arrow">↓</span></a>
+<div class="actions">
+  <a href="${apiUrl}">json<span class="arr">↗</span></a>
+  <a href="/api/v1${path}/schema">schema<span class="arr">↗</span></a>
+  <a href="${githubUrl}">github<span class="arr">↗</span></a>
+  <a href="#mcp">mcp<span class="arr">↓</span></a>
 </div>
 
-<section data-fade>
-  <div class="eyebrow">entities · ${entities.length} of ${totalEntities}</div>
+<section>
+  <h2>entities · ${entities.length} of ${totalEntities}</h2>
   ${filterBar}
-  <div class="frame-window">
-    <div class="chrome">
-      <span class="dot"></span><span class="dot"></span><span class="dot"></span>
-      <span class="filename">${filename}</span>
-    </div>
-    <table class="entities">
-      <thead><tr>${colHeaders}</tr></thead>
-      <tbody>${rows}</tbody>
-    </table>
-  </div>
+  <table class="data">
+    <thead><tr>${colHeaders}</tr></thead>
+    <tbody>${rows}</tbody>
+  </table>
   <div class="pager">
+    <span>showing ${entities.length}</span>
     ${page.next_cursor
       ? html`<a href="${path}?cursor=${page.next_cursor}${
           activeCountries.length > 0 ? `&filter[hq_country]=${activeCountries.join(",")}` : ""
-        }">next page →</a>`
-      : html`<span class="end">end of results</span>`}
+        }">next →</a>`
+      : html`<span>end of results</span>`}
   </div>
 </section>
 
-<details class="connect" id="connect">
-  <summary>Connect this dataset to your AI agent</summary>
+<details class="connect" id="mcp">
+  <summary>connect via mcp http</summary>
   <div class="body">
-    <p class="muted">Add to your <code class="inline">.mcp.json</code>. Anonymous reads are free; writes will require an OAuth-scoped token (coming with the write API).</p>
+    <p class="muted" style="font-family: var(--mono); font-size: 11.5px;">add to .mcp.json — anonymous reads, oauth-gated writes (coming).</p>
     <pre><code>{
   "mcpServers": {
     "${ds.schema.name}": {
@@ -684,30 +552,23 @@ export function renderFrame(
     }
   }
 }</code></pre>
-    <p class="note">MCP HTTP runtime — coming next. JSON API works today.</p>
+    <p class="note">mcp http runtime — coming. json api works today.</p>
   </div>
 </details>
 `;
-  return shell(`${ds.schema.name} — frames.dev`, body);
+  return shell(`${ds.schema.name} — frames-cloud`, body);
 }
 
 // ---------------------------------------------------------------------------
-// Entity view (the evidence story)
+// Entity view
 // ---------------------------------------------------------------------------
-
-function toneForField(field: string, value: unknown): string {
-  if (typeof value !== "string") return "";
-  if (field === "hq_country") return "blue";
-  if (field === "category") return "green";
-  if (field === "funding_stage") return "yellow";
-  return "";
-}
 
 export function renderEntity(ds: Dataset, ent: Entity): HtmlEscapedString {
   const path = `/${ds.user}/${ds.repo}${ds.frame_path ? "/" + ds.frame_path : ""}`;
 
-  const fieldGrid = Object.keys(ds.schema.fields).map((f) => {
+  const fieldRows = Object.keys(ds.schema.fields).map((f) => {
     const v = ent.fields[f];
+    const ev = ent.evidence[f];
     const fact = ent.facts[f];
     const required = ds.schema.fields[f]?.required;
     const valueRender =
@@ -716,59 +577,47 @@ export function renderEntity(ds: Dataset, ent: Entity): HtmlEscapedString {
         : typeof v === "string" && v.startsWith("http")
           ? html`<a href="${v}" target="_blank" rel="noopener">${v}</a>`
           : typeof v === "string"
-            ? (() => {
-                const tone = toneForField(f, v);
-                return tone ? html`<span class="chip ${tone}">${v}</span>` : html`<span>${v}</span>`;
-              })()
-            : html`<span>${String(v)}</span>`;
-    return html`
-      <div class="key">${f}${required ? html`<span class="req">REQ</span>` : ""}</div>
-      <div class="val">${valueRender}</div>
-      <div class="ts">${fact?.ts.split("T")[0] ?? "—"}</div>
-    `;
+            ? html`<span>${v}</span>`
+            : html`<span class="mono">${String(v)}</span>`;
+    return html`<tr>
+      <td class="k">${f}${required ? html`<span class="req">REQ</span>` : ""}</td>
+      <td class="v">${valueRender}</td>
+      <td class="s">${ev ? html`<a href="${ev.url}" target="_blank" rel="noopener">${host(ev.url)}</a>` : ""}</td>
+      <td class="t">${fact?.ts.split("T")[0] ?? ""}</td>
+    </tr>`;
   });
 
-  const evidenceCards = Object.entries(ent.evidence).map(([f, src]) => {
+  const evidenceItems = Object.entries(ent.evidence).map(([f, src]) => {
     const v = ent.fields[f];
-    const tone = toneForField(f, v);
     const valueDisplay = typeof v === "string" ? v : String(v);
-    let host = src.url;
-    try {
-      host = new URL(src.url).host;
-    } catch {}
-    return html`<article class="${tone}" data-fade>
-  <div class="field-name">${f}</div>
-  <div class="field-value">${valueDisplay}</div>
-  <blockquote>${src.excerpt ?? "(no excerpt)"}</blockquote>
-  <div class="source-meta">
-    <a href="${src.url}" target="_blank" rel="noopener">${host}</a>
-    <span>retrieved ${src.retrieved_at}</span>
-  </div>
-</article>`;
+    return html`<div class="item">
+      <div class="head">
+        <span class="field">${f}</span>
+        <span class="value">${valueDisplay}</span>
+        <span class="meta"><a href="${src.url}" target="_blank" rel="noopener">${host(src.url)}</a> · retrieved ${src.retrieved_at}</span>
+      </div>
+      <blockquote>${src.excerpt ?? "(no excerpt)"}</blockquote>
+    </div>`;
   });
 
   const body = html`
-<section data-fade>
-  <div class="breadcrumb"><a href="${path}">← ${ds.schema.name}</a></div>
-  <h1 class="entity">${String(ent.fields.name ?? ent.entity_id)}</h1>
-  <div class="entity-id">${ent.entity_id}</div>
+<div class="breadcrumb"><a href="${path}">← ${ds.schema.name}</a></div>
+<h1 class="entity">${String(ent.fields.name ?? ent.entity_id)}</h1>
+<div class="entity-id">${ent.entity_id}</div>
+
+<section>
+  <h2>fields</h2>
+  <table class="fields" style="margin-top: 12px;">
+    <tbody>${fieldRows}</tbody>
+  </table>
 </section>
 
-<section data-fade>
-  <div class="eyebrow">fields</div>
-  <div class="field-grid">
-    ${fieldGrid}
-  </div>
-</section>
-
-<section data-fade>
-  <div class="eyebrow">evidence</div>
-  <h2 style="margin-bottom: 24px;">Every field, sourced.</h2>
-  <p class="muted" style="font-family: var(--sans); margin-bottom: 32px;">Each cell above came from a page on the open web. The verbatim excerpt that supports it appears below, alongside the URL and the date the page was read.</p>
-  <div class="evidence">
-    ${evidenceCards}
+<section>
+  <h2>evidence · ${Object.keys(ent.evidence).length}</h2>
+  <div class="evidence-list" style="margin-top: 12px;">
+    ${evidenceItems}
   </div>
 </section>
 `;
-  return shell(`${ent.fields.name ?? ent.entity_id} — frames.dev`, body, { narrow: true });
+  return shell(`${ent.fields.name ?? ent.entity_id} — frames-cloud`, body);
 }
