@@ -18,9 +18,13 @@ const RESOURCE_WORDS = new Set(["schema", "readme", "entities", "_frames"]);
 app.get("/", async (c) => {
   try {
     const out = await renderHome();
-    return c.html(out);
+    const str = String(out); // force coercion in case it's an HtmlEscapedString-wrapped Promise
+    return new Response(str, {
+      status: 200,
+      headers: { "content-type": "text/html; charset=utf-8" },
+    });
   } catch (e) {
-    return c.json({ error: "renderHome failed", msg: (e as Error).message, stack: (e as Error).stack?.split("\n").slice(0, 8) }, 500);
+    return c.json({ error: "renderHome failed", msg: (e as Error).message, stack: (e as Error).stack?.split("\n").slice(0, 10) }, 500);
   }
 });
 app.get("/_test", (c) => c.html("<h1>hello</h1>"));
