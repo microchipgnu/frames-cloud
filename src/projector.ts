@@ -1,4 +1,4 @@
-import type { Entity, Fact, FrameEvent } from "./types.ts";
+import type { Entity, Fact, FrameEvent } from "./types";
 
 export function parseEvents(ndjson: string): FrameEvent[] {
   if (!ndjson) return [];

@@ -1,10 +1,10 @@
 import { Hono } from "hono";
 import { cors } from "hono/cors";
-import { DatasetError, cacheStats, listFrames, loadDataset } from "./cache.ts";
-import { GitHubError } from "./github.ts";
-import { decodeCursor, paginate, parseFilters } from "./pagination.ts";
-import type { Entity, Source } from "./types.ts";
-import { renderEntity, renderFrame, renderHome, renderRepoIndex } from "./views.ts";
+import { DatasetError, cacheStats, listFrames, loadDataset } from "./cache";
+import { GitHubError } from "./github";
+import { decodeCursor, paginate, parseFilters } from "./pagination";
+import type { Entity, Source } from "./types";
+import { renderEntity, renderFrame, renderHome, renderRepoIndex } from "./views";
 
 const app = new Hono();
 app.use("*", cors());

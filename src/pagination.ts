@@ -1,4 +1,4 @@
-import type { Entity } from "./types.ts";
+import type { Entity } from "./types";
 
 // base64url encoder/decoder, runtime-agnostic (Edge has no Node Buffer).
 export function encodeCursor(entity_id: string): string {

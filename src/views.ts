@@ -1,6 +1,6 @@
 import { html, raw } from "hono/html";
 import type { HtmlEscapedString } from "hono/utils/html";
-import type { Dataset, Entity, Source } from "./types.ts";
+import type { Dataset, Entity, Source } from "./types";
 
 // `html` tag can return a Promise when interpolating async values; widen
 // our render-function return type so TS strict mode (Vercel) is happy.

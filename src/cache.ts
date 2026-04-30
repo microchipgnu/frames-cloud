@@ -1,7 +1,7 @@
 import { parse as parseYaml } from "yaml";
-import { discoverFrames, fetchRaw, resolveSha, type FrameTreeEntry } from "./github.ts";
-import { parseEvents, project } from "./projector.ts";
-import type { Dataset, Schema } from "./types.ts";
+import { discoverFrames, fetchRaw, resolveSha, type FrameTreeEntry } from "./github";
+import { parseEvents, project } from "./projector";
+import type { Dataset, Schema } from "./types";
 
 const SHA_TTL_MS = 60_000;
 const shaCache = new Map<string, { sha: string; expires: number }>();
