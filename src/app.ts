@@ -15,7 +15,35 @@ const RESOURCE_WORDS = new Set(["schema", "readme", "entities", "_frames"]);
 // 1. Static endpoints
 // ---------------------------------------------------------------------------
 
-app.get("/", (c) => c.html(renderHome()));
+app.get("/", async (c) => {
+  const user = "microchipgnu";
+  const repo = "frames-examples";
+  let data: Parameters<typeof renderHome>[0] = null;
+  try {
+    const { sha, frames } = await listFrames(user, repo, "HEAD");
+    const summaries = await Promise.all(
+      frames.map(async (f) => {
+        try {
+          const ds = await loadDataset(user, repo, "HEAD", f.frame_path);
+          return {
+            frame_path: f.frame_path,
+            schema_name: ds.schema.name,
+            description: ds.schema.description,
+            entity_count: [...ds.entities.values()].filter((e) => !e.removed).length,
+            max_ts: ds.max_ts,
+          };
+        } catch {
+          return { frame_path: f.frame_path };
+        }
+      }),
+    );
+    data = { user, repo, sha, frames: summaries };
+  } catch {
+    data = null;
+  }
+  c.header("Cache-Control", "public, s-maxage=60, stale-while-revalidate=600");
+  return c.html(renderHome(data));
+});
 app.get("/healthz", (c) => c.json({ ok: true, cache: cacheStats() }));
 
 // ---------------------------------------------------------------------------

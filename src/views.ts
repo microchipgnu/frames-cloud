@@ -570,49 +570,105 @@ function fieldCellPlain(value: unknown): Html {
 // Home
 // ---------------------------------------------------------------------------
 
-export function renderHome(): Html {
+export type HomeFrame = {
+  frame_path: string;
+  schema_name?: string;
+  description?: string;
+  entity_count?: number;
+  max_ts?: string;
+};
+
+export type HomeData = {
+  user: string;
+  repo: string;
+  sha: string;
+  frames: HomeFrame[];
+} | null;
+
+export function renderHome(data: HomeData): Html {
+  const fallbackUser = "microchipgnu";
+  const fallbackRepo = "frames-examples";
+  const exampleUser = data?.user ?? fallbackUser;
+  const exampleRepo = data?.repo ?? fallbackRepo;
+  const exampleUrl = `/${exampleUser}/${exampleRepo}`;
+  const githubUrl = `https://github.com/${exampleUser}/${exampleRepo}`;
+
+  const totalEntities = data
+    ? data.frames.reduce((n, f) => n + (f.entity_count ?? 0), 0)
+    : 0;
+  const maxTs = data
+    ? data.frames.reduce<string>(
+        (m, f) => (f.max_ts && (!m || f.max_ts > m) ? f.max_ts : m),
+        "",
+      )
+    : "";
+
+  const cards =
+    data && data.frames.length > 0
+      ? data.frames.map((f) => {
+          const url = `/${data.user}/${data.repo}${f.frame_path ? "/" + f.frame_path : ""}`;
+          return html`<a class="card" href="${url}">
+            <div>
+              <div class="title">${f.schema_name ?? f.frame_path}</div>
+              <div class="path">${f.frame_path || "(root)"}</div>
+              ${f.description
+                ? html`<div class="desc">${f.description.split("\n")[0]}</div>`
+                : ""}
+            </div>
+            <div class="col"><span class="k">entities</span><span class="v">${f.entity_count ?? "—"}</span></div>
+            <div class="col"><span class="k">updated</span><span class="v">${f.max_ts ? f.max_ts.split("T")[0] : "—"}</span></div>
+          </a>`;
+        })
+      : [
+          html`<a class="card" href="${exampleUrl}">
+            <div>
+              <div class="title">${fallbackRepo}</div>
+              <div class="path">github.com / ${fallbackUser} / ${fallbackRepo}</div>
+            </div>
+            <div class="col"><span class="k">open</span><span class="v">→</span></div>
+          </a>`,
+        ];
+
   const body = html`
 <section>
-  <div class="eyebrow">frames-cloud · github-resolver runtime for evidence-backed datasets</div>
+  <div class="eyebrow">frames-cloud</div>
   <h1 class="home">Live datasets from any public GitHub repo.</h1>
-  <p class="desc">A frame is a directory containing <code class="inline">schema.yml</code> and <code class="inline">events.ndjson</code>. Push the repo and the URL works — paginated JSON API plus a public table view, with verbatim source provenance per cell. URL = filesystem path inside the repo.</p>
-</section>
-
-<section>
-  <h2>endpoints</h2>
-  <div class="scroll" style="margin-top: 12px;">
-  <table class="data">
-    <thead><tr>
-      <th>method</th><th>path</th><th>response</th>
-    </tr></thead>
-    <tbody>
-      <tr><td class="mono">GET</td><td class="mono">/&lt;user&gt;/&lt;repo&gt;[/&lt;frame_path&gt;]</td><td>html — entity table view</td></tr>
-      <tr><td class="mono">GET</td><td class="mono">/&lt;user&gt;/&lt;repo&gt;[/&lt;frame_path&gt;]/entities/&lt;id&gt;</td><td>html — entity detail with evidence</td></tr>
-      <tr><td class="mono">GET</td><td class="mono">/api/v1/&lt;user&gt;/&lt;repo&gt;[/&lt;frame_path&gt;]/entities</td><td>json — paginated, cursor on entity_id</td></tr>
-      <tr><td class="mono">GET</td><td class="mono">/api/v1/&lt;user&gt;/&lt;repo&gt;[/&lt;frame_path&gt;]/entities/&lt;id&gt;</td><td>json — full entity + all evidence</td></tr>
-      <tr><td class="mono">GET</td><td class="mono">/api/v1/&lt;user&gt;/&lt;repo&gt;[/&lt;frame_path&gt;]/schema</td><td>json — schema.yml as JSON</td></tr>
-      <tr><td class="mono">GET</td><td class="mono">/api/v1/&lt;user&gt;/&lt;repo&gt;[/&lt;frame_path&gt;]/readme</td><td>md — README.md</td></tr>
-      <tr><td class="mono">GET</td><td class="mono">/api/v1/&lt;user&gt;/&lt;repo&gt;/_frames</td><td>json — list every schema.yml in the repo</td></tr>
-    </tbody>
-  </table>
-  </div>
+  <p class="desc">A frame is a folder with <code class="inline">schema.yml</code> and <code class="inline">events.ndjson</code>. Push it to GitHub — the URL works. JSON API, table view, and per-cell source provenance, served from any commit.</p>
 </section>
 
 <section>
   <h2>example</h2>
-  <div class="frames-list">
-    <a class="card" href="/microchipgnu/frames-examples">
-      <div>
-        <div class="title">frames-examples</div>
-        <div class="path">github.com / microchipgnu / frames-examples</div>
-        <div class="desc">Reference repo: maintain multiple live datasets with frames + opencode on a daily cron. Three sibling frames under <code class="inline">datasets/</code> — <code class="inline">ai-models</code>, <code class="inline">ai-promises</code>, <code class="inline">mcp-servers</code>.</div>
-      </div>
-      <div class="col"><span class="k">frames</span><span class="v">3</span></div>
-      <div class="col"><span class="k">type</span><span class="v">multi-frame</span></div>
-      <div class="col"><span class="k">refresh</span><span class="v">daily cron</span></div>
-    </a>
+  <div class="masthead">
+    <div class="cell"><span class="key">repo</span><span class="val"><a href="${githubUrl}">${exampleUser}/${exampleRepo}</a></span></div>
+    ${data
+      ? html`<div class="cell"><span class="key">frames</span><span class="val">${data.frames.length}</span></div>
+        <div class="cell"><span class="key">entities</span><span class="val">${totalEntities}</span></div>
+        ${maxTs ? html`<div class="cell"><span class="key">updated</span><span class="val">${maxTs.split("T")[0]}</span></div>` : ""}
+        <div class="cell"><span class="key">commit</span><span class="val">${data.sha.slice(0, 7)}</span></div>`
+      : html`<div class="cell"><span class="key">status</span><span class="val">live</span></div>`}
   </div>
+  <div class="frames-list" style="margin-top: 0; border-top: none;">${cards}</div>
 </section>
+
+<details class="connect">
+  <summary>api reference</summary>
+  <div class="body">
+    <p class="muted" style="font-family: var(--mono); font-size: 11.5px;">URL = filesystem path inside the repo. <code class="inline">&lt;frame_path&gt;</code> is optional for single-frame repos.</p>
+    <div class="scroll" style="margin-top: 12px;">
+      <table class="data">
+        <thead><tr><th>path</th><th>response</th></tr></thead>
+        <tbody>
+          <tr><td class="mono">/&lt;user&gt;/&lt;repo&gt;[/&lt;frame_path&gt;]</td><td>html — entity table</td></tr>
+          <tr><td class="mono">/&lt;user&gt;/&lt;repo&gt;[/&lt;frame_path&gt;]/entities/&lt;id&gt;</td><td>html — entity detail with evidence</td></tr>
+          <tr><td class="mono">/api/v1/&lt;user&gt;/&lt;repo&gt;[/&lt;frame_path&gt;]/entities</td><td>json — paginated, cursor on entity_id</td></tr>
+          <tr><td class="mono">/api/v1/&lt;user&gt;/&lt;repo&gt;[/&lt;frame_path&gt;]/entities/&lt;id&gt;</td><td>json — full entity + all evidence</td></tr>
+          <tr><td class="mono">/api/v1/&lt;user&gt;/&lt;repo&gt;[/&lt;frame_path&gt;]/schema</td><td>json — schema as JSON</td></tr>
+          <tr><td class="mono">/api/v1/&lt;user&gt;/&lt;repo&gt;/_frames</td><td>json — every schema.yml in the repo</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</details>
 `;
   return shell("frames-cloud", body);
 }
