@@ -63,7 +63,38 @@ function withETag(c: any, sha: string, max_ts: string, suffix = "") {
   return false;
 }
 
-function entityShape(ent: Entity, include: "first" | "all") {
+function entityShape(ent: Entity, include: "first" | "all" | "history") {
+  if (include === "history") {
+    const history: Record<string, Array<{
+      fact_id: string;
+      value: unknown;
+      ts: string;
+      source: Source;
+      evidence: Source[];
+      deprecated: boolean;
+      current: boolean;
+      confidence?: number;
+      observed_at?: string;
+    }>> = {};
+    for (const [field, facts] of Object.entries(ent.history)) {
+      const liveId = ent.facts[field]?.fact_id;
+      history[field] = facts
+        .slice()
+        .sort((a, b) => b.ts.localeCompare(a.ts))
+        .map((f) => ({
+          fact_id: f.fact_id,
+          value: f.value,
+          ts: f.ts,
+          source: f.source,
+          evidence: f.evidence,
+          deprecated: f.deprecated,
+          current: f.fact_id === liveId,
+          confidence: f.confidence,
+          observed_at: f.observed_at,
+        }));
+    }
+    return { entity_id: ent.entity_id, fields: ent.fields, history };
+  }
   const evidence: Record<string, Source | Source[]> = {};
   if (include === "first") {
     for (const [field, src] of Object.entries(ent.evidence)) evidence[field] = src;
@@ -187,7 +218,9 @@ async function respondEntities(c: any, user: string, repo: string, framePath: st
   );
   const cursor = decodeCursor(url.searchParams.get("cursor") ?? undefined);
   const filters = parseFilters(url.searchParams);
-  const include = url.searchParams.get("include") === "all" ? "all" : "first";
+  const includeRaw = url.searchParams.get("include");
+  const include: "first" | "all" | "history" =
+    includeRaw === "all" ? "all" : includeRaw === "history" ? "history" : "first";
   const { rows, next_cursor, has_more } = paginate(ds.entities.values(), cursor, limit, filters);
   if (next_cursor) {
     const nextUrl = new URL(c.req.url);
@@ -214,7 +247,9 @@ async function respondEntity(
   if (!ent || ent.removed) {
     return c.json({ error: "entity not found", entity_id: id }, 404);
   }
-  const include = c.req.query("include") === "first" ? "first" : "all";
+  const includeRaw = c.req.query("include");
+  const include: "first" | "all" | "history" =
+    includeRaw === "first" ? "first" : includeRaw === "history" ? "history" : "all";
   return c.json(entityShape(ent, include));
 }
 

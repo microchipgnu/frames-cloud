@@ -435,6 +435,37 @@ const STYLE = raw(`
     table.fields td.s:empty + td.t:empty { display: none; }
   }
 
+  /* History timeline — per field block */
+  .field-history { padding: 24px 0; border-bottom: 1px solid var(--border-soft); }
+  .field-history:first-child { padding-top: 8px; }
+  .field-history:last-child { border-bottom: none; }
+  .field-history .field-name {
+    font-family: var(--mono); font-size: 11px; color: var(--muted);
+    text-transform: uppercase; letter-spacing: 0.1em;
+    margin-bottom: 12px;
+    display: flex; align-items: baseline; gap: 10px;
+  }
+  .field-history .field-name .count {
+    color: var(--ink-2); font-size: 10.5px;
+  }
+
+  .status-pill {
+    display: inline-block; padding: 0 6px; font-family: var(--mono);
+    font-size: 9.5px; letter-spacing: 0.06em; text-transform: uppercase;
+    border: 1px solid var(--border); color: var(--muted);
+  }
+  .status-pill.current { color: var(--ink); border-color: var(--ink); }
+  .status-pill.deprecated { color: var(--muted); text-decoration: line-through; }
+  .status-pill.superseded { color: var(--muted); }
+
+  /* Inline revisions hint in the fields table */
+  table.fields td.v .revisions {
+    font-family: var(--mono); font-size: 10.5px; color: var(--muted);
+    margin-left: 8px; text-transform: uppercase; letter-spacing: 0.06em;
+    text-decoration: none;
+  }
+  table.fields td.v .revisions:hover { color: var(--ink); }
+
   /* Evidence — mono transcript style */
   .evidence-list { border-top: 1px solid var(--border); }
   .evidence-list .item {
@@ -872,6 +903,7 @@ export function renderEntity(ds: Dataset, ent: Entity): Html {
     const ev = ent.evidence[f];
     const fact = ent.facts[f];
     const required = ds.schema.fields[f]?.required;
+    const revisions = ent.history[f]?.length ?? 0;
     const valueRender =
       v === undefined || v === null
         ? html`<span class="empty"></span>`
@@ -882,22 +914,53 @@ export function renderEntity(ds: Dataset, ent: Entity): Html {
             : html`<span class="mono">${String(v)}</span>`;
     return html`<tr>
       <td class="k">${f}${required ? html`<span class="req">REQ</span>` : ""}</td>
-      <td class="v">${valueRender}</td>
+      <td class="v">${valueRender}${
+        revisions > 1
+          ? html`<a class="revisions" href="#hist-${f}">${revisions} revisions</a>`
+          : ""
+      }</td>
       <td class="s">${ev ? html`<a href="${ev.url}" target="_blank" rel="noopener">${host(ev.url)}</a>` : ""}</td>
       <td class="t">${fact?.ts.split("T")[0] ?? ""}</td>
     </tr>`;
   });
 
-  const evidenceItems = Object.entries(ent.evidence).map(([f, src]) => {
-    const v = ent.fields[f];
-    const valueDisplay = typeof v === "string" ? v : String(v);
-    return html`<div class="item">
-      <div class="head">
-        <span class="field">${f}</span>
-        <span class="value">${valueDisplay}</span>
-        <span class="meta"><a href="${src.url}" target="_blank" rel="noopener">${host(src.url)}</a> · retrieved ${src.retrieved_at}</span>
-      </div>
-      <blockquote>${src.excerpt ?? "(no excerpt)"}</blockquote>
+  // Per-field history blocks. One block per field that has at least one fact.
+  // Order: schema field order, then any extra (unknown) fields with facts.
+  const schemaFieldOrder = Object.keys(ds.schema.fields);
+  const extraFields = Object.keys(ent.history).filter((f) => !schemaFieldOrder.includes(f));
+  const historyFieldOrder = [...schemaFieldOrder, ...extraFields].filter(
+    (f) => (ent.history[f]?.length ?? 0) > 0,
+  );
+
+  const totalRevisions = historyFieldOrder.reduce(
+    (n, f) => n + (ent.history[f]?.length ?? 0),
+    0,
+  );
+
+  const historyBlocks = historyFieldOrder.map((f) => {
+    const facts = ent.history[f]!.slice().sort((a, b) => b.ts.localeCompare(a.ts));
+    const liveId = ent.facts[f]?.fact_id;
+    const items = facts.map((fact) => {
+      const status: "current" | "deprecated" | "superseded" =
+        fact.deprecated
+          ? "deprecated"
+          : fact.fact_id === liveId
+            ? "current"
+            : "superseded";
+      const valueDisplay =
+        typeof fact.value === "string" ? fact.value : JSON.stringify(fact.value);
+      return html`<div class="item">
+        <div class="head">
+          <span class="value">${valueDisplay}</span>
+          <span class="status-pill ${status}">${status}</span>
+          <span class="meta"><a href="${fact.source.url}" target="_blank" rel="noopener">${host(fact.source.url)}</a> · ${fact.ts.split("T")[0]}</span>
+        </div>
+        <blockquote>${fact.source.excerpt ?? "(no excerpt)"}</blockquote>
+      </div>`;
+    });
+    return html`<div class="field-history" id="hist-${f}">
+      <div class="field-name">${f}<span class="count">${facts.length} ${facts.length === 1 ? "revision" : "revisions"}</span></div>
+      <div class="evidence-list">${items}</div>
     </div>`;
   });
 
@@ -914,9 +977,9 @@ export function renderEntity(ds: Dataset, ent: Entity): Html {
 </section>
 
 <section>
-  <h2>evidence · ${Object.keys(ent.evidence).length}</h2>
-  <div class="evidence-list" style="margin-top: 12px;">
-    ${evidenceItems}
+  <h2>history · ${historyFieldOrder.length} ${historyFieldOrder.length === 1 ? "field" : "fields"} · ${totalRevisions} ${totalRevisions === 1 ? "revision" : "revisions"}</h2>
+  <div style="margin-top: 12px; border-top: 1px solid var(--border);">
+    ${historyBlocks}
   </div>
 </section>
 `;

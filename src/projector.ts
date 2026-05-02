@@ -35,6 +35,7 @@ export function project(events: FrameEvent[]): {
             fields: {},
             evidence: {},
             facts: {},
+            history: {},
             removed: false,
           });
         }
@@ -56,6 +57,7 @@ export function project(events: FrameEvent[]): {
             fields: {},
             evidence: {},
             facts: {},
+            history: {},
             removed: false,
           };
           entities.set(entity_id, ent);
@@ -73,6 +75,8 @@ export function project(events: FrameEvent[]): {
           deprecated: false,
         };
         factIndex.set(fact_id, fact);
+
+        (ent.history[field] ??= []).push(fact);
 
         // last-write-wins per (entity_id, field) by ts among non-deprecated facts
         const existing = ent.facts[field];

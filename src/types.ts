@@ -69,6 +69,8 @@ export type Entity = {
   fields: Record<string, unknown>;
   evidence: Record<string, Source>;
   facts: Record<string, Fact>;
+  /** Every fact ever set for a field, in event order. Includes deprecated. */
+  history: Record<string, Fact[]>;
   removed: boolean;
 };
 
