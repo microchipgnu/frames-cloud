@@ -911,8 +911,8 @@ export function renderFrame(
 
   const recentSection =
     recent.length > 0
-      ? html`<section>
-  <h2>recent · last ${recent.length} ${recent.length === 1 ? "change" : "changes"}</h2>
+      ? html`<section id="activity">
+  <h2>activity · last ${recent.length} ${recent.length === 1 ? "change" : "changes"}</h2>
   <div class="recent-list">${recentItems}</div>
 </section>`
       : "";
@@ -959,10 +959,11 @@ export function renderFrame(
   <a href="${apiUrl}">json<span class="arr">↗</span></a>
   <a href="/api/v1${path}/schema">schema<span class="arr">↗</span></a>
   <a href="${githubUrl}">github<span class="arr">↗</span></a>
+  ${recent.length > 0
+    ? html`<a href="#activity">activity<span class="arr">↓</span></a>`
+    : ""}
   <a href="#mcp">mcp<span class="arr">↓</span></a>
 </div>
-
-${recentSection}
 
 <section>
   <h2>entities · ${entities.length} of ${totalEntities}</h2>
@@ -982,6 +983,8 @@ ${recentSection}
       : html`<span>end of results</span>`}
   </div>
 </section>
+
+${recentSection}
 
 <details class="connect" id="mcp">
   <summary>connect via mcp http</summary>
