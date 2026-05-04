@@ -91,6 +91,24 @@ export type Schema = {
   allow_unknown_fields?: boolean;
 };
 
+export type RecentActivity =
+  | {
+      type: "created";
+      entity_id: string;
+      entity_name: string;
+      ts: string;
+    }
+  | {
+      type: "updated";
+      entity_id: string;
+      entity_name: string;
+      field: string;
+      value: unknown;
+      previous?: unknown;
+      ts: string;
+      source: Source;
+    };
+
 export type Dataset = {
   user: string;
   repo: string;

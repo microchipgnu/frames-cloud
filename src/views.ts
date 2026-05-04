@@ -1,6 +1,6 @@
 import { html, raw } from "hono/html";
 import type { HtmlEscapedString } from "hono/utils/html";
-import type { Dataset, Entity, Source } from "./types";
+import type { Dataset, Entity, RecentActivity, Source } from "./types";
 
 // `html` tag can return a Promise when interpolating async values; widen
 // our render-function return type so TS strict mode (Vercel) is happy.
@@ -435,6 +435,64 @@ const STYLE = raw(`
     table.fields td.s:empty + td.t:empty { display: none; }
   }
 
+  /* Recent activity — frame view */
+  .recent-list {
+    border-top: 1px solid var(--border);
+    border-bottom: 1px solid var(--border);
+    margin-top: 12px;
+  }
+  .recent-item {
+    display: grid;
+    grid-template-columns: 110px 64px minmax(0, 1fr);
+    gap: 12px;
+    align-items: baseline;
+    padding: 10px 4px;
+    border-bottom: 1px solid var(--border-soft);
+    font-size: 13px;
+  }
+  .recent-item:last-child { border-bottom: none; }
+  .recent-item .ts {
+    font-family: var(--mono); font-size: 11.5px; color: var(--muted);
+    white-space: nowrap;
+  }
+  .recent-item .label {
+    font-family: var(--mono); font-size: 10.5px; color: var(--muted);
+    text-transform: uppercase; letter-spacing: 0.08em;
+  }
+  .recent-item .label.new { color: var(--ink); }
+  .recent-item .body {
+    min-width: 0;
+    display: flex; flex-wrap: wrap; align-items: baseline; gap: 8px;
+  }
+  .recent-item .body a.entity-link {
+    color: var(--ink); text-decoration: none; font-weight: 500;
+  }
+  .recent-item .body a.entity-link:hover { text-decoration: underline; }
+  .recent-item .body .field {
+    font-family: var(--mono); font-size: 11.5px; color: var(--muted);
+    text-transform: uppercase; letter-spacing: 0.06em;
+  }
+  .recent-item .body .arrow { color: var(--muted); }
+  .recent-item .body .value {
+    font-family: var(--mono); font-size: 12px; color: var(--ink-2);
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+    max-width: 48ch;
+  }
+  .recent-item .body .value.was {
+    color: var(--muted); text-decoration: line-through;
+    text-decoration-color: var(--border);
+  }
+
+  @media (max-width: 640px) {
+    .recent-item {
+      grid-template-columns: 1fr;
+      gap: 4px;
+      padding: 12px 4px;
+    }
+    .recent-item .ts { order: 3; }
+    .recent-item .body .value { max-width: 100%; white-space: normal; }
+  }
+
   /* History timeline — per field block */
   .field-history { padding: 24px 0; border-bottom: 1px solid var(--border-soft); }
   .field-history:first-child { padding-top: 8px; }
@@ -585,6 +643,23 @@ function host(url: string): string {
   } catch {
     return url;
   }
+}
+
+function relativeTime(iso: string): string {
+  const ts = new Date(iso).getTime();
+  if (Number.isNaN(ts)) return iso.split("T")[0] ?? iso;
+  const diff = Date.now() - ts;
+  if (diff < 60_000) return "just now";
+  if (diff < 3_600_000) return `${Math.floor(diff / 60_000)}m ago`;
+  if (diff < 86_400_000) return `${Math.floor(diff / 3_600_000)}h ago`;
+  if (diff < 7 * 86_400_000) return `${Math.floor(diff / 86_400_000)}d ago`;
+  return iso.split("T")[0] ?? iso;
+}
+
+function displayValue(v: unknown): string {
+  if (v === null || v === undefined) return "—";
+  if (typeof v === "string") return v;
+  return JSON.stringify(v);
 }
 
 function fieldCellPlain(value: unknown): Html {
@@ -775,6 +850,7 @@ export function renderFrame(
   page: { next_cursor: string | null; has_more: boolean },
   filters: Record<string, string[]>,
   countryCounts: Map<string, number>,
+  recent: RecentActivity[],
 ): Html {
   const fieldOrder = Object.keys(ds.schema.fields);
   // skip "name" — we render it as the row header. include up to 6 more.
@@ -806,6 +882,39 @@ export function renderFrame(
     .map((c) => filterLink(c, countryCounts.get(c) ?? 0, activeCountries.includes(c)))}
   ${activeCountries.length > 0 ? html`<a class="clear" href="${path}">[clear]</a>` : ""}
 </div>`
+      : "";
+
+  const recentItems = recent.map((r) => {
+    const entityHref = `${path}/entities/${r.entity_id}`;
+    if (r.type === "created") {
+      return html`<div class="recent-item">
+        <span class="ts" title="${r.ts}">${relativeTime(r.ts)}</span>
+        <span class="label new">new</span>
+        <div class="body">
+          <a class="entity-link" href="${entityHref}">${r.entity_name}</a>
+        </div>
+      </div>`;
+    }
+    const newVal = displayValue(r.value);
+    const oldVal = r.previous !== undefined ? displayValue(r.previous) : null;
+    return html`<div class="recent-item">
+      <span class="ts" title="${r.ts}">${relativeTime(r.ts)}</span>
+      <span class="label">update</span>
+      <div class="body">
+        <a class="entity-link" href="${entityHref}#hist-${r.field}">${r.entity_name}</a>
+        <span class="field">${r.field}</span>
+        ${oldVal !== null ? html`<span class="value was">${oldVal}</span><span class="arrow">→</span>` : ""}
+        <span class="value">${newVal}</span>
+      </div>
+    </div>`;
+  });
+
+  const recentSection =
+    recent.length > 0
+      ? html`<section>
+  <h2>recent · last ${recent.length} ${recent.length === 1 ? "change" : "changes"}</h2>
+  <div class="recent-list">${recentItems}</div>
+</section>`
       : "";
 
   const colHeaders = html`
@@ -852,6 +961,8 @@ export function renderFrame(
   <a href="${githubUrl}">github<span class="arr">↗</span></a>
   <a href="#mcp">mcp<span class="arr">↓</span></a>
 </div>
+
+${recentSection}
 
 <section>
   <h2>entities · ${entities.length} of ${totalEntities}</h2>
